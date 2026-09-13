@@ -3,3 +3,4 @@ dist
 .env
 .env.local
 *.tsbuildinfo
+gestao-familia-dist.zip
