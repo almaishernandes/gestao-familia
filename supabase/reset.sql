@@ -1,4 +1,4 @@
--- ATENÇÃO: apaga todos os dados e objetos do schema Família Hub.
+-- ATENÇÃO: apaga todos os dados e objetos do schema Gestão Família.
 -- Rode isto ANTES de rodar schema.sql novamente, apenas se puder perder os dados atuais.
 
 drop table if exists

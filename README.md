@@ -1,4 +1,4 @@
-# Família Hub
+# Gestão Família
 
 Plataforma de gestão familiar integrada (compras, cardápio, saúde, viagens, finanças).
 
