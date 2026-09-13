@@ -4,30 +4,27 @@ import { MobileTabBar } from "@/components/layout/MobileTabBar";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { OnboardingPage } from "@/pages/OnboardingPage";
+import { ComprasPage } from "@/pages/ComprasPage";
+import { NutricaoPage } from "@/pages/NutricaoPage";
+import { SaudePage } from "@/pages/SaudePage";
+import { ViagensPage } from "@/pages/ViagensPage";
+import { FinancasPage } from "@/pages/FinancasPage";
+import { CalendarioPage } from "@/pages/CalendarioPage";
+import { DocumentosPage } from "@/pages/DocumentosPage";
 import { useAppStore } from "@/stores/useAppStore";
 import { useSession } from "@/hooks/useSession";
 import { useFamilyContext } from "@/hooks/useFamilyContext";
 
-// Placeholders — cada módulo vira uma página própria em src/pages
-function PlaceholderPage({ title }: { title: string }) {
-  return (
-    <div className="p-8 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">{title}</h1>
-      <p className="text-slate-400 mt-2 text-sm">Módulo em construção.</p>
-    </div>
-  );
-}
-
 const PAGES: Record<string, JSX.Element> = {
   dashboard: <DashboardPage />,
-  compras: <PlaceholderPage title="Hub de Compras & Orçamentos" />,
-  nutricao: <PlaceholderPage title="Nutrição & Cardápio Semanal" />,
-  saude: <PlaceholderPage title="Prontuário Médico Familiar" />,
-  viagens: <PlaceholderPage title="Viagens, Férias & Lazer" />,
-  financas: <PlaceholderPage title="Controle Financeiro" />,
-  feed: <PlaceholderPage title="Mural da Família" />,
-  calendario: <PlaceholderPage title="Calendário Unificado" />,
-  documentos: <PlaceholderPage title="Central de Documentos" />,
+  compras: <ComprasPage />,
+  nutricao: <NutricaoPage />,
+  saude: <SaudePage />,
+  viagens: <ViagensPage />,
+  financas: <FinancasPage />,
+  feed: <DashboardPage />,
+  calendario: <CalendarioPage />,
+  documentos: <DocumentosPage />,
 };
 
 function LoadingScreen() {

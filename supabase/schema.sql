@@ -591,7 +591,81 @@ grant execute on function public.create_family(text, text) to authenticated;
 grant execute on function public.join_family_by_code(text, text) to authenticated;
 
 -- ============================================================================
--- 9. REALTIME
+-- 9. CUPONS FISCAIS (NFC-e via QR Code)
+-- ============================================================================
+-- Fluxo: app escaneia o QR Code do cupom -> obtém a URL da NFC-e (portal da
+-- SEFAZ do estado) -> uma Edge Function busca e interpreta a página -> os
+-- itens retornados viram uma lista de compras já marcada como comprada.
+
+create type public.receipt_status as enum ('pendente','processado','erro');
+
+create table public.purchase_receipts (
+  id uuid primary key default gen_random_uuid(),
+  family_id uuid not null references public.families(id) on delete cascade,
+  scanned_by uuid not null references public.profiles(id),
+  nfce_url text not null,
+  store_name text,
+  total_amount numeric(10,2),
+  purchased_at timestamptz,
+  status public.receipt_status not null default 'pendente',
+  raw_items jsonb, -- [{name, quantity, unit_price, total_price}]
+  shopping_list_id uuid references public.shopping_lists(id),
+  error_message text,
+  created_at timestamptz not null default now()
+);
+
+alter table public.purchase_receipts enable row level security;
+
+create policy "purchase_receipts: family access" on public.purchase_receipts
+  for all using (family_id in (select public.my_family_ids()))
+  with check (family_id in (select public.my_family_ids()));
+
+-- ============================================================================
+-- 10. STORAGE BUCKETS
+-- ============================================================================
+-- Buckets privados: acesso só via signed URL / policy (não são "public").
+
+insert into storage.buckets (id, name, public)
+values
+  ('house-documents', 'house-documents', false),
+  ('medical-documents', 'medical-documents', false),
+  ('receipts', 'receipts', false)
+on conflict (id) do nothing;
+
+-- Estrutura de path esperada: <family_id>/<arquivo>. A policy extrai o
+-- primeiro segmento do path e confere se é uma família do usuário.
+create policy "house-documents: family access" on storage.objects
+  for all using (
+    bucket_id = 'house-documents'
+    and (storage.foldername(name))[1]::uuid in (select public.my_family_ids())
+  )
+  with check (
+    bucket_id = 'house-documents'
+    and (storage.foldername(name))[1]::uuid in (select public.my_family_ids())
+  );
+
+create policy "medical-documents: family access" on storage.objects
+  for all using (
+    bucket_id = 'medical-documents'
+    and (storage.foldername(name))[1]::uuid in (select public.my_family_ids())
+  )
+  with check (
+    bucket_id = 'medical-documents'
+    and (storage.foldername(name))[1]::uuid in (select public.my_family_ids())
+  );
+
+create policy "receipts: family access" on storage.objects
+  for all using (
+    bucket_id = 'receipts'
+    and (storage.foldername(name))[1]::uuid in (select public.my_family_ids())
+  )
+  with check (
+    bucket_id = 'receipts'
+    and (storage.foldername(name))[1]::uuid in (select public.my_family_ids())
+  );
+
+-- ============================================================================
+-- 11. REALTIME
 -- ============================================================================
 alter publication supabase_realtime add table
   public.shopping_items,
@@ -600,4 +674,5 @@ alter publication supabase_realtime add table
   public.feed_posts,
   public.feed_reactions,
   public.trip_expenses,
-  public.calendar_events;
+  public.calendar_events,
+  public.purchase_receipts;

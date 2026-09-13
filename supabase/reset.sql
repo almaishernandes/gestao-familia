@@ -2,6 +2,7 @@
 -- Rode isto ANTES de rodar schema.sql novamente, apenas se puder perder os dados atuais.
 
 drop table if exists
+  public.purchase_receipts,
   public.comments,
   public.calendar_events,
   public.house_documents,
@@ -41,3 +42,8 @@ drop type if exists public.meal_slot;
 drop type if exists public.item_category;
 drop type if exists public.family_role;
 drop type if exists public.feed_post_type;
+drop type if exists public.receipt_status;
+
+drop policy if exists "house-documents: family access" on storage.objects;
+drop policy if exists "medical-documents: family access" on storage.objects;
+drop policy if exists "receipts: family access" on storage.objects;

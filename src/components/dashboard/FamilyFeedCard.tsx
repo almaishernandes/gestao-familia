@@ -1,7 +1,12 @@
+import { useState } from "react";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
+import { Modal } from "@/components/ui/Modal";
+import { SelectField, PrimaryButton } from "@/components/ui/Field";
 import { CommentsDrawer } from "@/components/shared/CommentsDrawer";
 import { useFamilyFeed } from "@/hooks/useFamilyFeed";
+import { useAppStore } from "@/stores/useAppStore";
+import * as feedService from "@/services/feedService";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { Sparkles, Megaphone, Image as ImageIcon, MessageSquare } from "lucide-react";
@@ -15,13 +20,56 @@ const TYPE_ICON = {
 
 export function FamilyFeedCard() {
   const posts = useFamilyFeed();
+  const { familyId, currentUserId } = useAppStore();
+  const [modalOpen, setModalOpen] = useState(false);
+  const [type, setType] = useState<"aviso" | "recado" | "conquista">("recado");
+  const [content, setContent] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!familyId || !currentUserId || !content.trim()) return;
+    setLoading(true);
+    await feedService.createPost(familyId, currentUserId, type, content.trim());
+    setLoading(false);
+    setContent("");
+    setModalOpen(false);
+  }
 
   return (
     <Card className="p-5">
       <div className="flex items-center justify-between mb-4">
         <h2 className="font-semibold text-slate-900 dark:text-white">Mural da Família</h2>
-        <button className="text-sm font-medium text-sage-600 hover:text-sage-700">+ Novo aviso</button>
+        <button
+          onClick={() => setModalOpen(true)}
+          className="text-sm font-medium text-sage-600 hover:text-sage-700"
+        >
+          + Novo aviso
+        </button>
       </div>
+
+      <Modal open={modalOpen} onClose={() => setModalOpen(false)} title="Novo post no mural">
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <SelectField label="Tipo" value={type} onChange={(e) => setType(e.target.value as typeof type)}>
+            <option value="recado">Recado</option>
+            <option value="aviso">Aviso</option>
+            <option value="conquista">Conquista</option>
+          </SelectField>
+          <label className="block">
+            <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Mensagem</span>
+            <textarea
+              required
+              rows={3}
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              className="mt-1 w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-sage-400"
+            />
+          </label>
+          <PrimaryButton type="submit" disabled={loading}>
+            {loading ? "Publicando..." : "Publicar"}
+          </PrimaryButton>
+        </form>
+      </Modal>
 
       <div className="space-y-4 max-h-96 overflow-y-auto scrollbar-thin pr-1">
         {posts.length === 0 && (
