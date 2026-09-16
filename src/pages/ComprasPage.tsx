@@ -223,7 +223,7 @@ export function ComprasPage() {
         <>
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Hub de Compras</h1>
+              <h1 className="font-display text-2xl font-semibold text-slate-900 dark:text-white">Hub de Compras</h1>
               <p className="text-sm text-slate-400 mt-1">Listas compartilhadas em tempo real com a família.</p>
             </div>
             <div className="flex gap-2">

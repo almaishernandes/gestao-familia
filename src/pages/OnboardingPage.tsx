@@ -51,7 +51,7 @@ export function OnboardingPage({ onDone }: OnboardingPageProps) {
           <div className="h-12 w-12 rounded-xl2 bg-sage-500 flex items-center justify-center mb-3">
             <Home className="h-6 w-6 text-white" />
           </div>
-          <h1 className="text-xl font-semibold text-slate-900 dark:text-white">Bem-vindo(a)!</h1>
+          <h1 className="font-display text-2xl font-semibold text-slate-900 dark:text-white">Bem-vindo(a)!</h1>
           <p className="text-sm text-slate-400 mt-1 text-center">
             Crie uma família nova ou entre em uma já existente.
           </p>

@@ -27,7 +27,7 @@ export function DashboardPage() {
     >
       <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Olá, família! 👋</h1>
+          <h1 className="font-display text-3xl font-semibold text-slate-900 dark:text-white">Olá, família! 👋</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
             Aqui está o resumo do que está acontecendo em casa hoje.
           </p>
@@ -39,35 +39,35 @@ export function DashboardPage() {
         <ModuleSummaryCard
           icon={ShoppingCart}
           title="Compras"
-          accent="sage"
+          accent="terracotta"
           onClick={() => setActiveModule("compras")}
           {...MOCK_SUMMARY.compras}
         />
         <ModuleSummaryCard
           icon={Salad}
           title="Cardápio"
-          accent="terracotta"
+          accent="sage"
           onClick={() => setActiveModule("nutricao")}
           {...MOCK_SUMMARY.nutricao}
         />
         <ModuleSummaryCard
           icon={HeartPulse}
           title="Saúde"
-          accent="slate"
+          accent="rose"
           onClick={() => setActiveModule("saude")}
           {...MOCK_SUMMARY.saude}
         />
         <ModuleSummaryCard
           icon={Plane}
           title="Viagens"
-          accent="sage"
+          accent="sky"
           onClick={() => setActiveModule("viagens")}
           {...MOCK_SUMMARY.viagens}
         />
         <ModuleSummaryCard
           icon={Wallet}
           title="Finanças"
-          accent="terracotta"
+          accent="amber"
           onClick={() => setActiveModule("financas")}
           {...MOCK_SUMMARY.financas}
         />

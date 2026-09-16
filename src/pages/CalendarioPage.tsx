@@ -79,7 +79,7 @@ export function CalendarioPage() {
   return (
     <div className="p-4 md:p-8 max-w-3xl mx-auto pb-24 md:pb-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Calendário Unificado</h1>
+        <h1 className="font-display text-2xl font-semibold text-slate-900 dark:text-white">Calendário Unificado</h1>
         <button
           onClick={() => setModalOpen(true)}
           className="inline-flex items-center gap-1.5 rounded-xl bg-sage-500 hover:bg-sage-600 text-white text-sm font-medium px-4 py-2.5"

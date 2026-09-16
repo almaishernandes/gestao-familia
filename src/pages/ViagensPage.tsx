@@ -217,7 +217,7 @@ export function ViagensPage() {
         <>
           <div className="flex items-center justify-between mb-6">
             <div>
-              <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Viagens & Lazer</h1>
+              <h1 className="font-display text-2xl font-semibold text-slate-900 dark:text-white">Viagens & Lazer</h1>
               <p className="text-sm text-slate-400 mt-1">Planejamento, cofrinho e gastos compartilhados.</p>
             </div>
             <button

@@ -3,26 +3,36 @@ import { Card } from "@/components/ui/Card";
 import { cn } from "@/lib/utils";
 import { ChevronRight } from "lucide-react";
 
+export type ModuleAccent = "sage" | "terracotta" | "slate" | "rose" | "sky" | "amber" | "violet";
+
 interface ModuleSummaryCardProps {
   icon: LucideIcon;
   title: string;
-  accent: "sage" | "terracotta" | "slate";
+  accent: ModuleAccent;
   metric: string;
   subtext: string;
   progress?: number; // 0-100
   onClick?: () => void;
 }
 
-const ACCENTS = {
-  sage: "bg-sage-50 text-sage-600 dark:bg-sage-600/20 dark:text-sage-400",
-  terracotta: "bg-terracotta-50 text-terracotta-500 dark:bg-terracotta-600/20 dark:text-terracotta-400",
-  slate: "bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300",
+const GRADIENTS: Record<ModuleAccent, string> = {
+  sage: "from-sage-400 to-sage-600",
+  terracotta: "from-terracotta-400 to-terracotta-600",
+  slate: "from-slate-400 to-slate-600",
+  rose: "from-rose-400 to-rose-600",
+  sky: "from-sky-400 to-sky-600",
+  amber: "from-amber-400 to-amber-600",
+  violet: "from-violet-400 to-violet-600",
 };
 
-const BARS = {
+const BARS: Record<ModuleAccent, string> = {
   sage: "bg-sage-500",
   terracotta: "bg-terracotta-500",
   slate: "bg-slate-500",
+  rose: "bg-rose-500",
+  sky: "bg-sky-500",
+  amber: "bg-amber-500",
+  violet: "bg-violet-500",
 };
 
 export function ModuleSummaryCard({
@@ -37,16 +47,21 @@ export function ModuleSummaryCard({
   return (
     <Card
       onClick={onClick}
-      className="p-5 cursor-pointer hover:shadow-md transition-shadow"
+      className="p-5 cursor-pointer hover:shadow-lg hover:-translate-y-0.5 transition-all"
     >
       <div className="flex items-start justify-between">
-        <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center", ACCENTS[accent])}>
-          <Icon className="h-5 w-5" />
+        <div
+          className={cn(
+            "h-11 w-11 rounded-2xl flex items-center justify-center bg-gradient-to-br shadow-sm",
+            GRADIENTS[accent]
+          )}
+        >
+          <Icon className="h-5 w-5 text-white" />
         </div>
         <ChevronRight className="h-4 w-4 text-slate-300" />
       </div>
       <h3 className="mt-3 text-sm font-medium text-slate-500 dark:text-slate-400">{title}</h3>
-      <p className="text-2xl font-semibold text-slate-900 dark:text-white mt-0.5">{metric}</p>
+      <p className="font-display text-2xl font-semibold text-slate-900 dark:text-white mt-0.5">{metric}</p>
       <p className="text-xs text-slate-400 mt-1">{subtext}</p>
       {progress !== undefined && (
         <div className="mt-3 h-1.5 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">

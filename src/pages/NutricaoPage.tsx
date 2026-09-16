@@ -111,7 +111,7 @@ export function NutricaoPage() {
     <div className="p-4 md:p-8 max-w-6xl mx-auto pb-24 md:pb-8">
       <div className="flex items-center justify-between flex-wrap gap-3 mb-6">
         <div>
-          <h1 className="text-2xl font-semibold text-slate-900 dark:text-white">Cardápio Semanal</h1>
+          <h1 className="font-display text-2xl font-semibold text-slate-900 dark:text-white">Cardápio Semanal</h1>
           <p className="text-sm text-slate-400 mt-1">
             Semana de {format(dates[0], "d MMM", { locale: ptBR })} a {format(dates[6], "d MMM", { locale: ptBR })}
           </p>
