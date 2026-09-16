@@ -1,10 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
-import { ArrowLeft, Plus, PiggyBank } from "lucide-react";
+import { ArrowLeft, Plus, PiggyBank, Plane, Receipt } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { TextField, SelectField, PrimaryButton } from "@/components/ui/Field";
 import { CommentsDrawer } from "@/components/shared/CommentsDrawer";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { useAppStore } from "@/stores/useAppStore";
+import { toastSuccess, toastError } from "@/stores/useToastStore";
 import * as tripsService from "@/services/tripsService";
 import type { Trip, TripExpense } from "@/services/tripsService";
 
@@ -19,13 +21,19 @@ function NewTripModal({ open, onClose, onCreated }: { open: boolean; onClose: ()
     e.preventDefault();
     if (!familyId || !currentUserId) return;
     setLoading(true);
-    await tripsService.createTrip(familyId, currentUserId, title, destination, goal ? Number(goal) : 0);
-    setLoading(false);
-    setTitle("");
-    setDestination("");
-    setGoal("");
-    onCreated();
-    onClose();
+    try {
+      await tripsService.createTrip(familyId, currentUserId, title, destination, goal ? Number(goal) : 0);
+      toastSuccess("Viagem criada!");
+      setTitle("");
+      setDestination("");
+      setGoal("");
+      onCreated();
+      onClose();
+    } catch {
+      toastError("Não foi possível criar a viagem.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -66,18 +74,27 @@ function TripDetail({ trip, onBack, onChanged }: { trip: Trip; onBack: () => voi
   async function handleContribute(e: React.FormEvent) {
     e.preventDefault();
     if (!currentUserId || !contribAmount) return;
-    await tripsService.addSavingsContribution(trip.id, currentUserId, Number(contribAmount));
-    setContribAmount("");
-    onChanged();
+    try {
+      await tripsService.addSavingsContribution(trip.id, currentUserId, Number(contribAmount));
+      toastSuccess("Valor guardado no cofrinho!");
+      setContribAmount("");
+      onChanged();
+    } catch {
+      toastError("Não foi possível guardar o valor.");
+    }
   }
 
   async function handleAddExpense(e: React.FormEvent) {
     e.preventDefault();
     if (!expenseDesc || !expenseAmount || !expensePaidBy) return;
-    await tripsService.addTripExpense(trip.id, expenseDesc, Number(expenseAmount), expensePaidBy);
-    setExpenseDesc("");
-    setExpenseAmount("");
-    load();
+    try {
+      await tripsService.addTripExpense(trip.id, expenseDesc, Number(expenseAmount), expensePaidBy);
+      setExpenseDesc("");
+      setExpenseAmount("");
+      load();
+    } catch {
+      toastError("Não foi possível registrar o gasto.");
+    }
   }
 
   const progress = trip.savingsGoal > 0 ? Math.min((trip.savedTotal / trip.savingsGoal) * 100, 100) : 0;
@@ -165,7 +182,7 @@ function TripDetail({ trip, onBack, onChanged }: { trip: Trip; onBack: () => voi
               </span>
             </div>
           ))}
-          {expenses.length === 0 && <p className="text-sm text-slate-400 text-center py-4">Nenhum gasto registrado.</p>}
+          {expenses.length === 0 && <EmptyState icon={Receipt} title="Nenhum gasto registrado" />}
         </div>
       </Card>
     </div>
@@ -238,7 +255,11 @@ export function ViagensPage() {
             })}
           </div>
           {trips.length === 0 && (
-            <p className="text-sm text-slate-400 text-center py-10">Nenhuma viagem planejada ainda.</p>
+            <EmptyState
+              icon={Plane}
+              title="Nenhuma viagem planejada ainda"
+              description="Crie a primeira viagem e comece a organizar o roteiro e o cofrinho."
+            />
           )}
         </>
       )}

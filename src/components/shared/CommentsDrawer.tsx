@@ -3,6 +3,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { MessageCircle, X, Send } from "lucide-react";
 import { useRealtimeComments } from "@/hooks/useRealtimeComments";
 import { useAppStore } from "@/stores/useAppStore";
+import { toastError } from "@/stores/useToastStore";
 import { Avatar } from "@/components/ui/Avatar";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -25,8 +26,12 @@ export function CommentsDrawer({ entityType, entityId, label = "Diálogo da fam�
 
   async function handleSend() {
     if (!draft.trim() || !familyId || !currentUserId) return;
-    await sendComment(familyId, currentUserId, draft.trim());
-    setDraft("");
+    try {
+      await sendComment(familyId, currentUserId, draft.trim());
+      setDraft("");
+    } catch {
+      toastError("Não foi possível enviar o comentário.");
+    }
   }
 
   return (

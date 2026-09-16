@@ -3,7 +3,9 @@ import { Plus, FileText, Download } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { TextField, SelectField, PrimaryButton } from "@/components/ui/Field";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { useAppStore } from "@/stores/useAppStore";
+import { toastSuccess, toastError } from "@/stores/useToastStore";
 import * as documentsService from "@/services/documentsService";
 import type { HouseDocument } from "@/services/documentsService";
 import { format } from "date-fns";
@@ -19,12 +21,18 @@ function UploadModal({ open, onClose, onCreated }: { open: boolean; onClose: () 
     e.preventDefault();
     if (!familyId || !currentUserId || !file) return;
     setLoading(true);
-    await documentsService.uploadDocument(familyId, currentUserId, file, title, category);
-    setLoading(false);
-    setTitle("");
-    setFile(null);
-    onCreated();
-    onClose();
+    try {
+      await documentsService.uploadDocument(familyId, currentUserId, file, title, category);
+      toastSuccess("Documento enviado!");
+      setTitle("");
+      setFile(null);
+      onCreated();
+      onClose();
+    } catch {
+      toastError("Não foi possível enviar o documento.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -107,7 +115,7 @@ export function DocumentosPage() {
           </button>
         ))}
         {docs.length === 0 && (
-          <p className="text-sm text-slate-400 text-center py-6">Nenhum documento enviado ainda.</p>
+          <EmptyState icon={FileText} title="Nenhum documento enviado ainda" />
         )}
       </Card>
 

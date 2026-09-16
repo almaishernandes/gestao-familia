@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { TextField, PrimaryButton } from "@/components/ui/Field";
 import { useAppStore } from "@/stores/useAppStore";
+import { toastSuccess, toastError } from "@/stores/useToastStore";
 import * as nutritionService from "@/services/nutritionService";
 import type { Recipe, MealPlanEntry } from "@/services/nutritionService";
 import { format } from "date-fns";
@@ -27,12 +28,18 @@ function NewRecipeModal({
     e.preventDefault();
     if (!familyId) return;
     setLoading(true);
-    await nutritionService.createRecipe(familyId, name, calories ? Number(calories) : null);
-    setLoading(false);
-    setName("");
-    setCalories("");
-    onCreated();
-    onClose();
+    try {
+      await nutritionService.createRecipe(familyId, name, calories ? Number(calories) : null);
+      toastSuccess("Receita salva!");
+      setName("");
+      setCalories("");
+      onCreated();
+      onClose();
+    } catch {
+      toastError("Não foi possível salvar a receita.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -88,9 +95,14 @@ export function NutricaoPage() {
   async function handleGenerateList() {
     if (!familyId || !currentUserId) return;
     setGenerating(true);
-    await nutritionService.generateShoppingListFromMealPlan(familyId, currentUserId, weekStart, entries);
-    setGenerating(false);
-    alert("Lista de compras gerada! Confira no Hub de Compras.");
+    try {
+      await nutritionService.generateShoppingListFromMealPlan(familyId, currentUserId, weekStart, entries);
+      toastSuccess("Lista de compras gerada! Confira no Hub de Compras.");
+    } catch {
+      toastError("Não foi possível gerar a lista. Tente novamente.");
+    } finally {
+      setGenerating(false);
+    }
   }
 
   const dates = nutritionService.weekDates(weekStart);

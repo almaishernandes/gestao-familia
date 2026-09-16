@@ -3,7 +3,9 @@ import { Plus, CalendarDays } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { TextField, PrimaryButton } from "@/components/ui/Field";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { useAppStore } from "@/stores/useAppStore";
+import { toastSuccess, toastError } from "@/stores/useToastStore";
 import * as calendarService from "@/services/calendarService";
 import type { CalendarEvent } from "@/services/calendarService";
 import { format } from "date-fns";
@@ -27,12 +29,18 @@ function NewEventModal({ open, onClose, onCreated }: { open: boolean; onClose: (
     e.preventDefault();
     if (!familyId || !currentUserId || !startsAt) return;
     setLoading(true);
-    await calendarService.createEvent(familyId, currentUserId, title, new Date(startsAt).toISOString());
-    setLoading(false);
-    setTitle("");
-    setStartsAt("");
-    onCreated();
-    onClose();
+    try {
+      await calendarService.createEvent(familyId, currentUserId, title, new Date(startsAt).toISOString());
+      toastSuccess("Evento adicionado à agenda!");
+      setTitle("");
+      setStartsAt("");
+      onCreated();
+      onClose();
+    } catch {
+      toastError("Não foi possível criar o evento.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -96,7 +104,7 @@ export function CalendarioPage() {
           </div>
         ))}
         {events.length === 0 && (
-          <p className="text-sm text-slate-400 text-center py-6">Nenhum evento futuro agendado.</p>
+          <EmptyState icon={CalendarDays} title="Nenhum evento futuro agendado" />
         )}
       </Card>
 

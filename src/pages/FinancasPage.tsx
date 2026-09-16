@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback } from "react";
-import { Plus, Lock, Wallet } from "lucide-react";
+import { Plus, Lock, Wallet, Receipt } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { TextField, SelectField, PrimaryButton } from "@/components/ui/Field";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { useAppStore } from "@/stores/useAppStore";
+import { toastSuccess, toastError } from "@/stores/useToastStore";
 import * as financeService from "@/services/financeService";
 import type { BankAccount, Transaction } from "@/services/financeService";
 import { cn } from "@/lib/utils";
@@ -21,12 +23,18 @@ function NewAccountModal({ open, onClose, onCreated }: { open: boolean; onClose:
     e.preventDefault();
     if (!familyId) return;
     setLoading(true);
-    await financeService.createAccount(familyId, name, accountType, Number(balance), ownerId || null, isPrivate);
-    setLoading(false);
-    setName("");
-    setBalance("0");
-    onCreated();
-    onClose();
+    try {
+      await financeService.createAccount(familyId, name, accountType, Number(balance), ownerId || null, isPrivate);
+      toastSuccess("Conta criada!");
+      setName("");
+      setBalance("0");
+      onCreated();
+      onClose();
+    } catch {
+      toastError("Não foi possível criar a conta.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -73,20 +81,26 @@ function NewTransactionModal({ open, onClose, onCreated }: { open: boolean; onCl
     e.preventDefault();
     if (!familyId || !currentUserId) return;
     setLoading(true);
-    await financeService.createTransaction(
-      familyId,
-      currentUserId,
-      kind,
-      description,
-      Number(amount),
-      category,
-      dueDate || null
-    );
-    setLoading(false);
-    setDescription("");
-    setAmount("");
-    onCreated();
-    onClose();
+    try {
+      await financeService.createTransaction(
+        familyId,
+        currentUserId,
+        kind,
+        description,
+        Number(amount),
+        category,
+        dueDate || null
+      );
+      toastSuccess("Lançamento salvo!");
+      setDescription("");
+      setAmount("");
+      onCreated();
+      onClose();
+    } catch {
+      toastError("Não foi possível salvar o lançamento.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -131,8 +145,12 @@ export function FinancasPage() {
   }, [reload]);
 
   async function handleTogglePaid(id: string, isPaid: boolean) {
-    await financeService.togglePaid(id, isPaid);
-    reload();
+    try {
+      await financeService.togglePaid(id, isPaid);
+      reload();
+    } catch {
+      toastError("Não foi possível atualizar o lançamento.");
+    }
   }
 
   const totalBalance = accounts.reduce((sum, a) => sum + a.currentBalance, 0);
@@ -179,7 +197,9 @@ export function FinancasPage() {
           </Card>
         ))}
         {accounts.length === 0 && (
-          <p className="text-sm text-slate-400 col-span-full text-center py-6">Nenhuma conta cadastrada.</p>
+          <div className="col-span-full">
+            <EmptyState icon={Wallet} title="Nenhuma conta cadastrada" />
+          </div>
         )}
       </div>
 
@@ -218,7 +238,7 @@ export function FinancasPage() {
             </div>
           ))}
           {transactions.length === 0 && (
-            <p className="text-sm text-slate-400 text-center py-6">Nenhum lançamento registrado.</p>
+            <EmptyState icon={Receipt} title="Nenhum lançamento registrado" />
           )}
         </div>
       </Card>

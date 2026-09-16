@@ -1,13 +1,15 @@
 import { useState } from "react";
-import { ArrowLeft, Plus, Share2, Trash2, ScanLine } from "lucide-react";
+import { ArrowLeft, Plus, Share2, Trash2, ScanLine, ShoppingCart, ClipboardList } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { TextField, SelectField, PrimaryButton } from "@/components/ui/Field";
 import { CommentsDrawer } from "@/components/shared/CommentsDrawer";
 import { ReceiptScannerModal } from "@/components/shared/ReceiptScannerModal";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { useShoppingLists } from "@/hooks/useShoppingLists";
 import { useShoppingItems } from "@/hooks/useShoppingList";
 import { useAppStore } from "@/stores/useAppStore";
+import { toastSuccess, toastError } from "@/stores/useToastStore";
 import * as shoppingService from "@/services/shoppingService";
 import { cn } from "@/lib/utils";
 
@@ -30,11 +32,17 @@ function NewListModal({ open, onClose, onCreated }: { open: boolean; onClose: ()
     e.preventDefault();
     if (!familyId || !currentUserId) return;
     setLoading(true);
-    await shoppingService.createList(familyId, currentUserId, title, storeType);
-    setLoading(false);
-    setTitle("");
-    onCreated();
-    onClose();
+    try {
+      await shoppingService.createList(familyId, currentUserId, title, storeType);
+      toastSuccess("Lista criada!");
+      setTitle("");
+      onCreated();
+      onClose();
+    } catch {
+      toastError("Não foi possível criar a lista.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -71,21 +79,33 @@ function ListDetail({ listId, title, onBack }: { listId: string; title: string; 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault();
     if (!name.trim()) return;
-    await shoppingService.addItem(listId, name.trim(), category, quantity);
-    setName("");
-    setQuantity(1);
-    reload();
+    try {
+      await shoppingService.addItem(listId, name.trim(), category, quantity);
+      setName("");
+      setQuantity(1);
+      reload();
+    } catch {
+      toastError("Não foi possível adicionar o item.");
+    }
   }
 
   async function handleToggle(itemId: string, checked: boolean) {
     if (!currentUserId) return;
-    await shoppingService.toggleItem(itemId, checked, currentUserId);
-    reload();
+    try {
+      await shoppingService.toggleItem(itemId, checked, currentUserId);
+      reload();
+    } catch {
+      toastError("Não foi possível atualizar o item.");
+    }
   }
 
   async function handleDelete(itemId: string) {
-    await shoppingService.deleteItem(itemId);
-    reload();
+    try {
+      await shoppingService.deleteItem(itemId);
+      reload();
+    } catch {
+      toastError("Não foi possível remover o item.");
+    }
   }
 
   function handleShare() {
@@ -181,7 +201,7 @@ function ListDetail({ listId, title, onBack }: { listId: string; title: string; 
             </div>
           ))}
           {items.length === 0 && (
-            <p className="text-sm text-slate-400 text-center py-6">Lista vazia. Adicione o primeiro item.</p>
+            <EmptyState icon={ClipboardList} title="Lista vazia" description="Adicione o primeiro item acima." />
           )}
         </div>
       </Card>
@@ -237,7 +257,11 @@ export function ComprasPage() {
             ))}
           </div>
           {lists.length === 0 && (
-            <p className="text-sm text-slate-400 text-center py-10">Nenhuma lista ainda. Crie a primeira!</p>
+            <EmptyState
+              icon={ShoppingCart}
+              title="Nenhuma lista ainda"
+              description="Crie a primeira lista ou escaneie um cupom fiscal para começar."
+            />
           )}
         </>
       )}

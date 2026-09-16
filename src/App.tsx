@@ -1,6 +1,9 @@
 import { useEffect } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { Home } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
 import { MobileTabBar } from "@/components/layout/MobileTabBar";
+import { ToastHost } from "@/components/shared/ToastHost";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { OnboardingPage } from "@/pages/OnboardingPage";
@@ -29,7 +32,14 @@ const PAGES: Record<string, JSX.Element> = {
 
 function LoadingScreen() {
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-slate-900">
+    <div className="min-h-screen flex flex-col items-center justify-center gap-4 bg-slate-50 dark:bg-slate-900">
+      <motion.div
+        animate={{ scale: [1, 1.08, 1] }}
+        transition={{ duration: 1.4, repeat: Infinity, ease: "easeInOut" }}
+        className="h-12 w-12 rounded-xl2 bg-sage-500 flex items-center justify-center"
+      >
+        <Home className="h-6 w-6 text-white" />
+      </motion.div>
       <p className="text-sm text-slate-400">Carregando...</p>
     </div>
   );
@@ -52,8 +62,21 @@ export default function App() {
   return (
     <div className="flex min-h-screen bg-slate-50 dark:bg-slate-900">
       <Sidebar />
-      <main className="flex-1 min-w-0">{PAGES[activeModule]}</main>
+      <main className="flex-1 min-w-0">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={activeModule}
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.18 }}
+          >
+            {PAGES[activeModule]}
+          </motion.div>
+        </AnimatePresence>
+      </main>
       <MobileTabBar />
+      <ToastHost />
     </div>
   );
 }

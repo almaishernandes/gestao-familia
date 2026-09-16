@@ -7,7 +7,10 @@ export function MobileTabBar() {
   const items = NAV_ITEMS.filter((i) => MOBILE_TAB_KEYS.includes(i.key));
 
   return (
-    <nav className="md:hidden fixed bottom-0 inset-x-0 bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 flex justify-around items-center h-16 px-1 z-40">
+    <nav
+      className="md:hidden fixed bottom-0 inset-x-0 bg-white/95 dark:bg-slate-800/95 backdrop-blur border-t border-slate-100 dark:border-slate-700 flex justify-around items-stretch h-16 px-1 z-40"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
       {items.map((item) => {
         const Icon = item.icon;
         const active = activeModule === item.key;
@@ -15,7 +18,7 @@ export function MobileTabBar() {
           <button
             key={item.key}
             onClick={() => setActiveModule(item.key)}
-            className="flex flex-col items-center justify-center gap-0.5 flex-1 h-full"
+            className="flex flex-col items-center justify-center gap-0.5 flex-1 min-w-0 active:opacity-60"
           >
             <Icon
               className={cn("h-6 w-6", active ? "text-sage-500" : "text-slate-400 dark:text-slate-500")}

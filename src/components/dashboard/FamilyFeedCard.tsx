@@ -6,6 +6,7 @@ import { SelectField, PrimaryButton } from "@/components/ui/Field";
 import { CommentsDrawer } from "@/components/shared/CommentsDrawer";
 import { useFamilyFeed } from "@/hooks/useFamilyFeed";
 import { useAppStore } from "@/stores/useAppStore";
+import { toastSuccess, toastError } from "@/stores/useToastStore";
 import * as feedService from "@/services/feedService";
 import { formatDistanceToNow } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -30,10 +31,16 @@ export function FamilyFeedCard() {
     e.preventDefault();
     if (!familyId || !currentUserId || !content.trim()) return;
     setLoading(true);
-    await feedService.createPost(familyId, currentUserId, type, content.trim());
-    setLoading(false);
-    setContent("");
-    setModalOpen(false);
+    try {
+      await feedService.createPost(familyId, currentUserId, type, content.trim());
+      toastSuccess("Publicado no mural!");
+      setContent("");
+      setModalOpen(false);
+    } catch {
+      toastError("Não foi possível publicar.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (

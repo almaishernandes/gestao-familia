@@ -4,7 +4,9 @@ import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { Modal } from "@/components/ui/Modal";
 import { TextField, SelectField, PrimaryButton } from "@/components/ui/Field";
+import { EmptyState } from "@/components/shared/EmptyState";
 import { useAppStore } from "@/stores/useAppStore";
+import { toastSuccess, toastError } from "@/stores/useToastStore";
 import * as healthService from "@/services/healthService";
 import type { HealthProfile, Medication } from "@/services/healthService";
 
@@ -33,17 +35,22 @@ function EmergencyCard({ profileId, fullName }: { profileId: string; fullName: s
   async function handleSave(e: React.FormEvent) {
     e.preventDefault();
     if (!familyId) return;
-    await healthService.upsertHealthProfile(familyId, profileId, {
-      bloodType: bloodType || null,
-      allergies: allergies
-        .split(",")
-        .map((a) => a.trim())
-        .filter(Boolean),
-      emergencyContactName: contactName || null,
-      emergencyContactPhone: contactPhone || null,
-    });
-    setEditing(false);
-    load();
+    try {
+      await healthService.upsertHealthProfile(familyId, profileId, {
+        bloodType: bloodType || null,
+        allergies: allergies
+          .split(",")
+          .map((a) => a.trim())
+          .filter(Boolean),
+        emergencyContactName: contactName || null,
+        emergencyContactPhone: contactPhone || null,
+      });
+      toastSuccess("Ficha de saúde atualizada.");
+      setEditing(false);
+      load();
+    } catch {
+      toastError("Não foi possível salvar a ficha.");
+    }
   }
 
   return (
@@ -115,13 +122,19 @@ function NewMedicationModal({
     e.preventDefault();
     if (!familyId || !profileId) return;
     setLoading(true);
-    await healthService.addMedication(familyId, profileId, name, dosage, frequency);
-    setLoading(false);
-    setName("");
-    setDosage("");
-    setFrequency("");
-    onCreated();
-    onClose();
+    try {
+      await healthService.addMedication(familyId, profileId, name, dosage, frequency);
+      toastSuccess("Medicamento adicionado.");
+      setName("");
+      setDosage("");
+      setFrequency("");
+      onCreated();
+      onClose();
+    } catch {
+      toastError("Não foi possível salvar o medicamento.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -165,8 +178,12 @@ export function SaudePage() {
   }, [reload]);
 
   async function handleRemove(id: string) {
-    await healthService.deactivateMedication(id);
-    reload();
+    try {
+      await healthService.deactivateMedication(id);
+      reload();
+    } catch {
+      toastError("Não foi possível remover o medicamento.");
+    }
   }
 
   function memberName(profileId: string) {
@@ -220,7 +237,7 @@ export function SaudePage() {
           </div>
         ))}
         {medications.length === 0 && (
-          <p className="text-sm text-slate-400 text-center py-6">Nenhum medicamento contínuo cadastrado.</p>
+          <EmptyState icon={Pill} title="Nenhum medicamento contínuo cadastrado" />
         )}
       </Card>
 
