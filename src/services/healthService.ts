@@ -89,3 +89,160 @@ export async function deactivateMedication(id: string) {
   const { error } = await supabase.from("medications").update({ is_active: false }).eq("id", id);
   if (error) throw error;
 }
+
+// ---------------------------------------------------------------------------
+// Receituário (prescriptions)
+// ---------------------------------------------------------------------------
+
+export interface PrescriptionItem {
+  name: string;
+  dosage: string;
+  instructions: string;
+  quantity: string;
+}
+
+export interface Prescription {
+  id: string;
+  profileId: string;
+  doctorName: string;
+  doctorCrm: string | null;
+  specialty: string | null;
+  issuedDate: string;
+  validityDate: string | null;
+  items: PrescriptionItem[];
+  notes: string | null;
+}
+
+export async function fetchPrescriptions(familyId: string): Promise<Prescription[]> {
+  const { data, error } = await supabase
+    .from("prescriptions")
+    .select("id, profile_id, doctor_name, doctor_crm, specialty, issued_date, validity_date, items, notes")
+    .eq("family_id", familyId)
+    .order("issued_date", { ascending: false });
+  if (error) throw error;
+  return (data ?? []).map((r: any) => ({
+    id: r.id,
+    profileId: r.profile_id,
+    doctorName: r.doctor_name,
+    doctorCrm: r.doctor_crm,
+    specialty: r.specialty,
+    issuedDate: r.issued_date,
+    validityDate: r.validity_date,
+    items: r.items ?? [],
+    notes: r.notes,
+  }));
+}
+
+export async function addPrescription(
+  familyId: string,
+  userId: string,
+  profileId: string,
+  doctorName: string,
+  doctorCrm: string,
+  specialty: string,
+  issuedDate: string,
+  validityDate: string,
+  items: PrescriptionItem[],
+  notes: string
+) {
+  const { error } = await supabase.from("prescriptions").insert({
+    family_id: familyId,
+    profile_id: profileId,
+    doctor_name: doctorName,
+    doctor_crm: doctorCrm || null,
+    specialty: specialty || null,
+    issued_date: issuedDate,
+    validity_date: validityDate || null,
+    items,
+    notes: notes || null,
+    created_by: userId,
+  });
+  if (error) throw error;
+}
+
+export async function deletePrescription(id: string) {
+  const { error } = await supabase.from("prescriptions").delete().eq("id", id);
+  if (error) throw error;
+}
+
+// ---------------------------------------------------------------------------
+// Exames médicos (medical_exams)
+// ---------------------------------------------------------------------------
+
+export type ExamStatus = "agendado" | "realizado" | "aguardando_resultado" | "concluido";
+
+export interface MedicalExam {
+  id: string;
+  profileId: string;
+  examName: string;
+  examType: string | null;
+  requestedByDoctor: string | null;
+  labName: string | null;
+  scheduledAt: string | null;
+  resultDate: string | null;
+  status: ExamStatus;
+  resultSummary: string | null;
+}
+
+export async function fetchExams(familyId: string): Promise<MedicalExam[]> {
+  const { data, error } = await supabase
+    .from("medical_exams")
+    .select(
+      "id, profile_id, exam_name, exam_type, requested_by_doctor, lab_name, scheduled_at, result_date, status, result_summary"
+    )
+    .eq("family_id", familyId)
+    .order("scheduled_at", { ascending: false, nullsFirst: false });
+  if (error) throw error;
+  return (data ?? []).map((r: any) => ({
+    id: r.id,
+    profileId: r.profile_id,
+    examName: r.exam_name,
+    examType: r.exam_type,
+    requestedByDoctor: r.requested_by_doctor,
+    labName: r.lab_name,
+    scheduledAt: r.scheduled_at,
+    resultDate: r.result_date,
+    status: r.status,
+    resultSummary: r.result_summary,
+  }));
+}
+
+export async function addExam(
+  familyId: string,
+  userId: string,
+  profileId: string,
+  examName: string,
+  examType: string,
+  requestedByDoctor: string,
+  labName: string,
+  scheduledAt: string
+) {
+  const { error } = await supabase.from("medical_exams").insert({
+    family_id: familyId,
+    profile_id: profileId,
+    exam_name: examName,
+    exam_type: examType || null,
+    requested_by_doctor: requestedByDoctor || null,
+    lab_name: labName || null,
+    scheduled_at: scheduledAt ? new Date(scheduledAt).toISOString() : null,
+    created_by: userId,
+  });
+  if (error) throw error;
+}
+
+export async function updateExamStatus(id: string, status: ExamStatus, resultSummary?: string) {
+  const { error } = await supabase
+    .from("medical_exams")
+    .update({
+      status,
+      result_date: status === "concluido" ? new Date().toISOString().slice(0, 10) : null,
+      result_summary: resultSummary ?? null,
+    })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteExam(id: string) {
+  const { error } = await supabase.from("medical_exams").delete().eq("id", id);
+  if (error) throw error;
+}

@@ -230,6 +230,44 @@ create table public.medications (
   created_at timestamptz not null default now()
 );
 
+-- Receituário: prescrições médicas, com dados do médico e os itens
+-- prescritos (cada item é {nome, dosagem, posologia, quantidade}).
+create table public.prescriptions (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  family_id uuid not null references public.families(id) on delete cascade,
+  doctor_name text not null,
+  doctor_crm text,
+  specialty text,
+  issued_date date not null default current_date,
+  validity_date date,
+  items jsonb not null default '[]', -- [{name, dosage, instructions, quantity}]
+  notes text,
+  storage_path text, -- foto/scan da receita no Supabase Storage
+  created_by uuid references public.profiles(id),
+  created_at timestamptz not null default now()
+);
+
+create type public.exam_status as enum ('agendado','realizado','aguardando_resultado','concluido');
+
+-- Exames médicos: do agendamento até o resultado.
+create table public.medical_exams (
+  id uuid primary key default gen_random_uuid(),
+  profile_id uuid not null references public.profiles(id) on delete cascade,
+  family_id uuid not null references public.families(id) on delete cascade,
+  exam_name text not null,
+  exam_type text, -- sangue, imagem, cardiologico, urina, outros
+  requested_by_doctor text,
+  lab_name text,
+  scheduled_at timestamptz,
+  result_date date,
+  status public.exam_status not null default 'agendado',
+  result_summary text,
+  storage_path text, -- laudo/resultado no Supabase Storage
+  created_by uuid references public.profiles(id),
+  created_at timestamptz not null default now()
+);
+
 create table public.medical_documents (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid not null references public.profiles(id) on delete cascade,
@@ -244,6 +282,8 @@ create table public.medical_documents (
 
 alter table public.health_profiles enable row level security;
 alter table public.medications enable row level security;
+alter table public.prescriptions enable row level security;
+alter table public.medical_exams enable row level security;
 alter table public.medical_documents enable row level security;
 
 create policy "health_profiles: family access" on public.health_profiles
@@ -251,6 +291,14 @@ create policy "health_profiles: family access" on public.health_profiles
   with check (family_id in (select public.my_family_ids()));
 
 create policy "medications: family access" on public.medications
+  for all using (family_id in (select public.my_family_ids()))
+  with check (family_id in (select public.my_family_ids()));
+
+create policy "prescriptions: family access" on public.prescriptions
+  for all using (family_id in (select public.my_family_ids()))
+  with check (family_id in (select public.my_family_ids()));
+
+create policy "medical_exams: family access" on public.medical_exams
   for all using (family_id in (select public.my_family_ids()))
   with check (family_id in (select public.my_family_ids()));
 
@@ -264,9 +312,17 @@ create policy "medical_documents: family access" on public.medical_documents
 
 create type public.trip_status as enum ('planejando','confirmada','em_andamento','concluida','cancelada');
 
+-- Três formatos de evento familiar fora de casa, cada um com seu próprio
+-- roteiro, despesas categorizadas e fontes de recursos:
+--   viagem   -> férias / viagens mais longas, com hospedagem
+--   lazer    -> passeios curtos, sem pernoite (cinema, parque, restaurante)
+--   excursao -> saídas em grupo/organizadas (igreja, escola, excursão comprada)
+create type public.trip_category as enum ('viagem','lazer','excursao');
+
 create table public.trips (
   id uuid primary key default gen_random_uuid(),
   family_id uuid not null references public.families(id) on delete cascade,
+  category public.trip_category not null default 'viagem',
   title text not null,
   destination text,
   start_date date,
@@ -284,15 +340,19 @@ create table public.trip_itinerary_items (
   day_date date,
   time_of_day time,
   title text not null,
-  type text, -- hotel, voo, turismo, religioso, restaurante
+  type text, -- hotel, voo, transporte, turismo, religioso, restaurante, outros
   location text,
   notes text,
   created_at timestamptz not null default now()
 );
 
+create type public.trip_expense_category as enum
+  ('transporte','hospedagem','alimentacao','ingressos','saude','compras','outros');
+
 create table public.trip_expenses (
   id uuid primary key default gen_random_uuid(),
   trip_id uuid not null references public.trips(id) on delete cascade,
+  category public.trip_expense_category not null default 'outros',
   description text not null,
   amount numeric(10,2) not null,
   paid_by uuid references public.profiles(id),
@@ -307,6 +367,23 @@ create table public.trip_savings_contributions (
   profile_id uuid not null references public.profiles(id),
   amount numeric(10,2) not null,
   contributed_at timestamptz not null default now()
+);
+
+-- Fontes de recursos que vão viabilizar o evento além do cofrinho da família
+-- (patrocínio, venda de itens/rifa, ajuda de parentes, verba da igreja/escola
+-- no caso de excursões, etc.) — planejado vs. efetivamente recebido.
+create type public.funding_source_type as enum
+  ('cofrinho_familia','patrocinio','venda','ajuda_terceiros','verba_instituicao','outro');
+
+create table public.trip_funding_sources (
+  id uuid primary key default gen_random_uuid(),
+  trip_id uuid not null references public.trips(id) on delete cascade,
+  type public.funding_source_type not null default 'outro',
+  name text not null,
+  planned_amount numeric(12,2) not null default 0,
+  received_amount numeric(12,2) not null default 0,
+  notes text,
+  created_at timestamptz not null default now()
 );
 
 create table public.leisure_wishlist (
@@ -335,6 +412,7 @@ alter table public.trips enable row level security;
 alter table public.trip_itinerary_items enable row level security;
 alter table public.trip_expenses enable row level security;
 alter table public.trip_savings_contributions enable row level security;
+alter table public.trip_funding_sources enable row level security;
 alter table public.leisure_wishlist enable row level security;
 alter table public.leisure_ratings enable row level security;
 
@@ -349,6 +427,9 @@ create policy "trip_expenses: via trip family" on public.trip_expenses
   for all using (trip_id in (select id from public.trips where family_id in (select public.my_family_ids())));
 
 create policy "trip_savings_contributions: via trip family" on public.trip_savings_contributions
+  for all using (trip_id in (select id from public.trips where family_id in (select public.my_family_ids())));
+
+create policy "trip_funding_sources: via trip family" on public.trip_funding_sources
   for all using (trip_id in (select id from public.trips where family_id in (select public.my_family_ids())));
 
 create policy "leisure_wishlist: family access" on public.leisure_wishlist

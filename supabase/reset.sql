@@ -13,11 +13,14 @@ drop table if exists
   public.bank_accounts,
   public.leisure_ratings,
   public.leisure_wishlist,
+  public.trip_funding_sources,
   public.trip_savings_contributions,
   public.trip_expenses,
   public.trip_itinerary_items,
   public.trips,
   public.medical_documents,
+  public.medical_exams,
+  public.prescriptions,
   public.medications,
   public.health_profiles,
   public.meal_plans,
@@ -37,6 +40,10 @@ drop function if exists public.join_family_by_code(text, text);
 
 drop type if exists public.calendar_event_source;
 drop type if exists public.transaction_kind;
+drop type if exists public.exam_status;
+drop type if exists public.funding_source_type;
+drop type if exists public.trip_expense_category;
+drop type if exists public.trip_category;
 drop type if exists public.trip_status;
 drop type if exists public.meal_slot;
 drop type if exists public.item_category;
