@@ -1,87 +1,178 @@
+import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { ShoppingCart, Salad, HeartPulse, Plane, Wallet } from "lucide-react";
-import { FamilyFeedCard } from "@/components/dashboard/FamilyFeedCard";
-import { ModuleSummaryCard } from "@/components/dashboard/ModuleSummaryCard";
-import { FamilyMembersBar } from "@/components/dashboard/FamilyMembersBar";
+import { Crown, User, Shield, ChevronRight } from "lucide-react";
+import { Card } from "@/components/ui/Card";
+import { Avatar } from "@/components/ui/Avatar";
+import { Modal } from "@/components/ui/Modal";
+import { TextField, PrimaryButton } from "@/components/ui/Field";
 import { useAppStore } from "@/stores/useAppStore";
+import { toastSuccess, toastError } from "@/stores/useToastStore";
+import * as familyService from "@/services/familyService";
+import type { ProfileDetails } from "@/services/familyService";
+import { cn } from "@/lib/utils";
 
-// Dados mock ilustrativos — substituir por hooks React Query (ex: useShoppingSummary,
-// useMealPlanSummary, useHealthAlerts, useTripProgress, useBudgetStatus).
-const MOCK_SUMMARY = {
-  compras: { metric: "12 itens", subtext: "3 listas ativas", progress: 60 },
-  nutricao: { metric: "Semana OK", subtext: "5 de 7 dias planejados", progress: 71 },
-  saude: { metric: "2 remédios hoje", subtext: "Próximo às 14h00", progress: undefined },
-  viagens: { metric: "Praia — Dez/26", subtext: "R$ 2.400 de R$ 5.000 guardados", progress: 48 },
-  financas: { metric: "R$ 18.240", subtext: "Saldo consolidado da família", progress: undefined },
+const ROLE_LABEL: Record<string, string> = {
+  owner: "Responsável",
+  adult: "Adulto",
+  dependent: "Dependente",
 };
 
+const ROLE_ICON: Record<string, typeof Crown> = {
+  owner: Crown,
+  adult: User,
+  dependent: Shield,
+};
+
+function MemberEditModal({
+  profileId,
+  fullName,
+  open,
+  onClose,
+  onSaved,
+}: {
+  profileId: string;
+  fullName: string;
+  open: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const familyId = useAppStore((s) => s.familyId);
+  const [details, setDetails] = useState<ProfileDetails | null>(null);
+  const [fullNameField, setFullNameField] = useState("");
+  const [displayName, setDisplayName] = useState("");
+  const [birthDate, setBirthDate] = useState("");
+  const [phone, setPhone] = useState("");
+  const [canViewFinances, setCanViewFinances] = useState(true);
+  const [loading, setLoading] = useState(false);
+
+  const load = useCallback(async () => {
+    if (!familyId) return;
+    const data = await familyService.fetchProfileDetails(familyId, profileId);
+    setDetails(data);
+    setFullNameField(data?.fullName ?? fullName);
+    setDisplayName(data?.displayName ?? "");
+    setBirthDate(data?.birthDate ?? "");
+    setPhone(data?.phone ?? "");
+    setCanViewFinances(data?.canViewFinances ?? true);
+  }, [familyId, profileId, fullName]);
+
+  useEffect(() => {
+    if (open) load();
+  }, [open, load]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!familyId) return;
+    setLoading(true);
+    try {
+      await familyService.updateProfileDetails(familyId, profileId, {
+        fullName: fullNameField,
+        displayName,
+        birthDate,
+        phone,
+        canViewFinances,
+      });
+      toastSuccess("Dados atualizados!");
+      onSaved();
+      onClose();
+    } catch {
+      toastError("Não foi possível salvar os dados.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={`Manutenção de ${fullName}`}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <TextField label="Nome completo" required value={fullNameField} onChange={(e) => setFullNameField(e.target.value)} />
+        <TextField label="Nome de exibição" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
+        <TextField label="Data de nascimento" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
+        <TextField label="Telefone" value={phone} onChange={(e) => setPhone(e.target.value)} />
+        {details?.role !== "owner" && (
+          <label className="flex items-center gap-2 text-sm text-slate-600 dark:text-slate-300">
+            <input type="checkbox" checked={canViewFinances} onChange={(e) => setCanViewFinances(e.target.checked)} />
+            Pode ver detalhes financeiros da família
+          </label>
+        )}
+        <p className="text-xs text-slate-400">
+          Papel na família: <span className="font-medium">{details ? ROLE_LABEL[details.role] : "—"}</span>
+        </p>
+        <PrimaryButton type="submit" disabled={loading}>
+          {loading ? "Salvando..." : "Salvar"}
+        </PrimaryButton>
+      </form>
+    </Modal>
+  );
+}
+
 export function DashboardPage() {
-  const setActiveModule = useAppStore((s) => s.setActiveModule);
+  const { members, familyId, currentUserId, setFamilyContext } = useAppStore();
+  const [selected, setSelected] = useState<{ id: string; fullName: string } | null>(null);
+
+  async function refreshMembers() {
+    if (!familyId || !currentUserId) return;
+    const result = await familyService.fetchMyFamily(currentUserId);
+    if (result) setFamilyContext(result.familyId, currentUserId, result.members);
+  }
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="p-4 md:p-8 max-w-7xl mx-auto space-y-6 pb-24 md:pb-8"
+      className="p-4 md:p-8 max-w-4xl mx-auto space-y-6 pb-24 md:pb-8"
     >
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h1 className="font-display text-3xl font-semibold text-slate-900 dark:text-white">Olá, família! 👋</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
-            Aqui está o resumo do que está acontecendo em casa hoje.
-          </p>
-        </div>
-        <FamilyMembersBar />
+      <div>
+        <h1 className="font-display text-3xl font-semibold text-slate-900 dark:text-white">Olá, família! 👋</h1>
+        <p className="text-slate-500 dark:text-slate-400 text-sm mt-1">
+          Selecione um membro para ver e atualizar os dados dele.
+        </p>
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <ModuleSummaryCard
-          icon={ShoppingCart}
-          title="Compras"
-          accent="terracotta"
-          onClick={() => setActiveModule("compras")}
-          {...MOCK_SUMMARY.compras}
-        />
-        <ModuleSummaryCard
-          icon={Salad}
-          title="Cardápio"
-          accent="sage"
-          onClick={() => setActiveModule("nutricao")}
-          {...MOCK_SUMMARY.nutricao}
-        />
-        <ModuleSummaryCard
-          icon={HeartPulse}
-          title="Saúde"
-          accent="rose"
-          onClick={() => setActiveModule("saude")}
-          {...MOCK_SUMMARY.saude}
-        />
-        <ModuleSummaryCard
-          icon={Plane}
-          title="Viagens"
-          accent="sky"
-          onClick={() => setActiveModule("viagens")}
-          {...MOCK_SUMMARY.viagens}
-        />
-        <ModuleSummaryCard
-          icon={Wallet}
-          title="Finanças"
-          accent="amber"
-          onClick={() => setActiveModule("financas")}
-          {...MOCK_SUMMARY.financas}
-        />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {members.map((m) => {
+          const RoleIcon = ROLE_ICON[m.role] ?? User;
+          return (
+            <Card
+              key={m.id}
+              onClick={() => setSelected({ id: m.id, fullName: m.fullName })}
+              className="p-5 cursor-pointer hover:shadow-md transition-shadow flex items-center gap-4"
+            >
+              <Avatar name={m.fullName} src={m.avatarUrl} size="lg" />
+              <div className="flex-1 min-w-0">
+                <h3 className="font-medium text-slate-900 dark:text-white truncate">{m.fullName}</h3>
+                <p
+                  className={cn(
+                    "text-xs mt-0.5 inline-flex items-center gap-1",
+                    m.role === "owner" ? "text-amber-600" : "text-slate-400"
+                  )}
+                >
+                  <RoleIcon className="h-3 w-3" />
+                  {ROLE_LABEL[m.role] ?? m.role}
+                </p>
+              </div>
+              <ChevronRight className="h-4 w-4 text-slate-300 shrink-0" />
+            </Card>
+          );
+        })}
+        {members.length === 0 && (
+          <p className="text-sm text-slate-400 text-center py-10 col-span-full">Nenhum membro na família ainda.</p>
+        )}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="lg:col-span-2">
-          <FamilyFeedCard />
-        </div>
-        <div className="space-y-6">
-          {/* Espaço reservado: AgendaWidget (próximos eventos do calendário unificado) */}
-          {/* Espaço reservado: MedicationRemindersWidget */}
-        </div>
-      </div>
+      {selected && (
+        <MemberEditModal
+          profileId={selected.id}
+          fullName={selected.fullName}
+          open={!!selected}
+          onClose={() => setSelected(null)}
+          onSaved={async () => {
+            await refreshMembers();
+            setSelected(null);
+          }}
+        />
+      )}
     </motion.div>
   );
 }

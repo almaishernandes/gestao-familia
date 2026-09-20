@@ -36,3 +36,56 @@ export async function fetchMyFamily(userId: string) {
 
   return { familyId, members: familyMembers };
 }
+
+export interface ProfileDetails {
+  fullName: string;
+  displayName: string | null;
+  birthDate: string | null;
+  phone: string | null;
+  role: "owner" | "adult" | "dependent";
+  canViewFinances: boolean;
+}
+
+export async function fetchProfileDetails(familyId: string, profileId: string): Promise<ProfileDetails | null> {
+  const { data, error } = await supabase
+    .from("family_members")
+    .select("role, can_view_finances, profiles(full_name, display_name, birth_date, phone)")
+    .eq("family_id", familyId)
+    .eq("profile_id", profileId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  const profile: any = data.profiles;
+  return {
+    fullName: profile.full_name,
+    displayName: profile.display_name,
+    birthDate: profile.birth_date,
+    phone: profile.phone,
+    role: data.role,
+    canViewFinances: data.can_view_finances,
+  };
+}
+
+export async function updateProfileDetails(
+  familyId: string,
+  profileId: string,
+  fields: { fullName: string; displayName: string; birthDate: string; phone: string; canViewFinances: boolean }
+) {
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .update({
+      full_name: fields.fullName,
+      display_name: fields.displayName || null,
+      birth_date: fields.birthDate || null,
+      phone: fields.phone || null,
+    })
+    .eq("id", profileId);
+  if (profileError) throw profileError;
+
+  const { error: memberError } = await supabase
+    .from("family_members")
+    .update({ can_view_finances: fields.canViewFinances })
+    .eq("family_id", familyId)
+    .eq("profile_id", profileId);
+  if (memberError) throw memberError;
+}

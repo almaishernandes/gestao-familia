@@ -5,6 +5,7 @@ import { Sidebar } from "@/components/layout/Sidebar";
 import { MobileTabBar } from "@/components/layout/MobileTabBar";
 import { ToastHost } from "@/components/shared/ToastHost";
 import { DashboardPage } from "@/pages/DashboardPage";
+import { MuralPage } from "@/pages/MuralPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { OnboardingPage } from "@/pages/OnboardingPage";
 import { ComprasPage } from "@/pages/ComprasPage";
@@ -25,7 +26,7 @@ const PAGES: Record<string, JSX.Element> = {
   saude: <SaudePage />,
   viagens: <ViagensPage />,
   financas: <FinancasPage />,
-  feed: <DashboardPage />,
+  feed: <MuralPage />,
   calendario: <CalendarioPage />,
   documentos: <DocumentosPage />,
 };

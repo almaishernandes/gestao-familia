@@ -88,6 +88,13 @@ create policy "profiles: self and family members can read" on public.profiles
   );
 create policy "profiles: self can update" on public.profiles
   for update using (id = auth.uid());
+create policy "profiles: family members can update each other" on public.profiles
+  for update using (
+    id in (
+      select fm2.profile_id from public.family_members fm2
+      where fm2.family_id in (select public.my_family_ids())
+    )
+  );
 create policy "profiles: self can insert" on public.profiles
   for insert with check (id = auth.uid());
 
@@ -559,6 +566,7 @@ create table public.house_documents (
 );
 
 create type public.calendar_event_source as enum ('manual','aniversario','saude','viagem','financeiro');
+create type public.calendar_event_type as enum ('compromisso','tarefa','lembrete');
 
 create table public.calendar_events (
   id uuid primary key default gen_random_uuid(),
@@ -566,6 +574,9 @@ create table public.calendar_events (
   title text not null,
   starts_at timestamptz not null,
   ends_at timestamptz,
+  event_type public.calendar_event_type not null default 'compromisso',
+  assigned_to uuid references public.profiles(id), -- null = toda a família
+  is_done boolean not null default false, -- usado por tarefa/lembrete
   source public.calendar_event_source not null default 'manual',
   related_id uuid, -- id opcional da entidade de origem (trip, medication, etc.)
   created_by uuid references public.profiles(id),

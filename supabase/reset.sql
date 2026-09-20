@@ -38,6 +38,7 @@ drop function if exists public.my_role_in(uuid);
 drop function if exists public.create_family(text, text);
 drop function if exists public.join_family_by_code(text, text);
 
+drop type if exists public.calendar_event_type;
 drop type if exists public.calendar_event_source;
 drop type if exists public.transaction_kind;
 drop type if exists public.exam_status;

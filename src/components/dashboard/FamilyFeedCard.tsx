@@ -46,7 +46,7 @@ export function FamilyFeedCard() {
   return (
     <Card className="p-5">
       <div className="flex items-center justify-between mb-4">
-        <h2 className="font-semibold text-slate-900 dark:text-white">Mural da Família</h2>
+        <h2 className="font-medium text-slate-500 dark:text-slate-400 text-sm">Publicações recentes</h2>
         <button
           onClick={() => setModalOpen(true)}
           className="text-sm font-medium text-sage-600 hover:text-sage-700"
