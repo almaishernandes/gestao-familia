@@ -181,7 +181,7 @@ export function CalendarioPage() {
   }
 
   return (
-    <div className="p-4 md:p-8 max-w-4xl mx-auto pb-24 md:pb-8">
+    <div className="p-4 md:p-8 max-w-5xl mx-auto pb-24 md:pb-8">
       <div className="flex items-center justify-between mb-6 flex-wrap gap-3">
         <h1 className="font-display text-2xl font-semibold text-slate-900 dark:text-white">Agenda da Família</h1>
         <button
@@ -193,92 +193,96 @@ export function CalendarioPage() {
         </button>
       </div>
 
-      <Card className="p-4 mb-6">
-        <div className="flex items-center justify-between mb-3">
-          <button onClick={() => setMonthCursor((d) => subMonths(d, 1))} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
-            <ChevronLeft className="h-4 w-4" />
-          </button>
-          <span className="text-sm font-medium capitalize text-slate-900 dark:text-white">
-            {format(monthCursor, "MMMM 'de' yyyy", { locale: ptBR })}
-          </span>
-          <button onClick={() => setMonthCursor((d) => addMonths(d, 1))} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
-            <ChevronRight className="h-4 w-4" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-7 gap-1 mb-1">
-          {WEEKDAY_LABELS.map((d, i) => (
-            <div key={i} className="text-center text-[11px] font-medium text-slate-400 py-1">
-              {d}
+      <div className="lg:grid lg:grid-cols-[340px_1fr] lg:gap-6 lg:items-start">
+        <div className="lg:sticky lg:top-6 mb-6 lg:mb-0 mx-auto w-full max-w-sm lg:max-w-none">
+          <Card className="p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <button onClick={() => setMonthCursor((d) => subMonths(d, 1))} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
+                <ChevronLeft className="h-4 w-4" />
+              </button>
+              <span className="text-sm font-medium capitalize text-slate-900 dark:text-white">
+                {format(monthCursor, "MMMM 'de' yyyy", { locale: ptBR })}
+              </span>
+              <button onClick={() => setMonthCursor((d) => addMonths(d, 1))} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
+                <ChevronRight className="h-4 w-4" />
+              </button>
             </div>
-          ))}
-        </div>
-        <div className="grid grid-cols-7 gap-1">
-          {gridDays.map((day, i) => {
-            const key = format(day, "yyyy-MM-dd");
-            const dayEvents = eventsByDay.get(key) ?? [];
-            const inMonth = isSameMonth(day, monthCursor);
-            const selected = selectedDate && isSameDay(day, selectedDate);
-            return (
+
+            <div className="grid grid-cols-7 gap-1 mb-1">
+              {WEEKDAY_LABELS.map((d, i) => (
+                <div key={i} className="text-center text-[11px] font-medium text-slate-400 py-1">
+                  {d}
+                </div>
+              ))}
+            </div>
+            <div className="grid grid-cols-7 gap-1">
+              {gridDays.map((day, i) => {
+                const key = format(day, "yyyy-MM-dd");
+                const dayEvents = eventsByDay.get(key) ?? [];
+                const inMonth = isSameMonth(day, monthCursor);
+                const selected = selectedDate && isSameDay(day, selectedDate);
+                return (
+                  <button
+                    key={i}
+                    onClick={() => setSelectedDate(selected ? null : day)}
+                    className={cn(
+                      "aspect-square rounded-lg flex flex-col items-center justify-center gap-0.5 text-xs relative transition-colors",
+                      !inMonth && "text-slate-300 dark:text-slate-600",
+                      inMonth && !selected && "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50",
+                      selected && "bg-sage-500 text-white",
+                      isToday(day) && !selected && "font-semibold text-sage-600"
+                    )}
+                  >
+                    {format(day, "d")}
+                    {dayEvents.length > 0 && (
+                      <span className={cn("h-1 w-1 rounded-full", selected ? "bg-white" : "bg-sage-500")} />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </Card>
+
+          <div className="flex items-center gap-2 mt-4 overflow-x-auto pb-1">
+            <button
+              onClick={() => setMemberFilter("all")}
+              className={cn(
+                "shrink-0 text-xs font-medium rounded-full px-3 py-1.5",
+                memberFilter === "all" ? "bg-sage-500 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300"
+              )}
+            >
+              Todos
+            </button>
+            {members.map((m) => (
               <button
-                key={i}
-                onClick={() => setSelectedDate(selected ? null : day)}
+                key={m.id}
+                onClick={() => setMemberFilter(m.id)}
                 className={cn(
-                  "aspect-square rounded-lg flex flex-col items-center justify-center gap-0.5 text-xs relative",
-                  !inMonth && "text-slate-300 dark:text-slate-600",
-                  inMonth && !selected && "text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700/50",
-                  selected && "bg-sage-500 text-white",
-                  isToday(day) && !selected && "font-semibold text-sage-600"
+                  "shrink-0 flex items-center gap-1.5 text-xs font-medium rounded-full pl-1 pr-3 py-1",
+                  memberFilter === m.id ? "bg-sage-500 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300"
                 )}
               >
-                {format(day, "d")}
-                {dayEvents.length > 0 && (
-                  <span className={cn("h-1 w-1 rounded-full", selected ? "bg-white" : "bg-sage-500")} />
-                )}
+                <Avatar name={m.fullName} src={m.avatarUrl} size="sm" />
+                {m.fullName}
               </button>
-            );
-          })}
+            ))}
+          </div>
         </div>
-      </Card>
 
-      <div className="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
-        <button
-          onClick={() => setMemberFilter("all")}
-          className={cn(
-            "shrink-0 text-xs font-medium rounded-full px-3 py-1.5",
-            memberFilter === "all" ? "bg-sage-500 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300"
-          )}
-        >
-          Todos
-        </button>
-        {members.map((m) => (
-          <button
-            key={m.id}
-            onClick={() => setMemberFilter(m.id)}
-            className={cn(
-              "shrink-0 flex items-center gap-1.5 text-xs font-medium rounded-full pl-1 pr-3 py-1",
-              memberFilter === m.id ? "bg-sage-500 text-white" : "bg-slate-100 dark:bg-slate-700 text-slate-500 dark:text-slate-300"
+        <div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-sm font-medium text-slate-500 dark:text-slate-400">
+              {selectedDate ? format(selectedDate, "d 'de' MMMM", { locale: ptBR }) : "Próximos compromissos"}
+            </h2>
+            {selectedDate && (
+              <button onClick={() => setSelectedDate(null)} className="text-xs text-sage-600 font-medium">
+                Ver todos
+              </button>
             )}
-          >
-            <Avatar name={m.fullName} src={m.avatarUrl} size="sm" />
-            {m.fullName}
-          </button>
-        ))}
-      </div>
+          </div>
 
-      <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-medium text-slate-500 dark:text-slate-400">
-          {selectedDate ? format(selectedDate, "d 'de' MMMM", { locale: ptBR }) : "Próximos compromissos"}
-        </h2>
-        {selectedDate && (
-          <button onClick={() => setSelectedDate(null)} className="text-xs text-sage-600 font-medium">
-            Ver todos
-          </button>
-        )}
-      </div>
-
-      <Card className="p-2">
-        {listEvents.map((event) => {
+          <Card className="p-2">
+            {listEvents.map((event) => {
           const Icon = TYPE_ICON[event.eventType];
           const isTask = event.eventType !== "compromisso";
           return (
@@ -309,10 +313,12 @@ export function CalendarioPage() {
             </div>
           );
         })}
-        {listEvents.length === 0 && (
-          <EmptyState icon={CalendarDays} title="Nada por aqui" description="Adicione um compromisso, tarefa ou lembrete." />
-        )}
-      </Card>
+            {listEvents.length === 0 && (
+              <EmptyState icon={CalendarDays} title="Nada por aqui" description="Adicione um compromisso, tarefa ou lembrete." />
+            )}
+          </Card>
+        </div>
+      </div>
 
       <NewEventModal
         open={modalOpen}
