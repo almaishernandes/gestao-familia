@@ -738,12 +738,21 @@ create policy "purchase_receipts: family access" on public.purchase_receipts
 -- ============================================================================
 -- Buckets privados: acesso só via signed URL / policy (não são "public").
 
-insert into storage.buckets (id, name, public)
+-- Limite de 15MB por arquivo, restrito a PDF, imagens e Word (evita que
+-- alguém suba um arquivo gigante ou de tipo indevido por engano).
+insert into storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
 values
-  ('house-documents', 'house-documents', false),
-  ('medical-documents', 'medical-documents', false),
-  ('receipts', 'receipts', false)
-on conflict (id) do nothing;
+  ('house-documents', 'house-documents', false, 15728640,
+   array['application/pdf','image/jpeg','image/png','image/webp',
+         'application/msword',
+         'application/vnd.openxmlformats-officedocument.wordprocessingml.document']),
+  ('medical-documents', 'medical-documents', false, 15728640,
+   array['application/pdf','image/jpeg','image/png','image/webp']),
+  ('receipts', 'receipts', false, 15728640,
+   array['application/pdf','image/jpeg','image/png','image/webp'])
+on conflict (id) do update set
+  file_size_limit = excluded.file_size_limit,
+  allowed_mime_types = excluded.allowed_mime_types;
 
 -- Estrutura de path esperada: <family_id>/<arquivo>. A policy extrai o
 -- primeiro segmento do path e confere se é uma família do usuário.

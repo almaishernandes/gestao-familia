@@ -10,12 +10,26 @@ import * as documentsService from "@/services/documentsService";
 import type { HouseDocument } from "@/services/documentsService";
 import { format } from "date-fns";
 
+const ACCEPTED_TYPES = ".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx";
+const MAX_FILE_SIZE = 15 * 1024 * 1024; // 15MB, mesmo limite configurado no bucket
+
 function UploadModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
   const { familyId, currentUserId } = useAppStore();
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("contrato");
   const [file, setFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = e.target.files?.[0] ?? null;
+    if (selected && selected.size > MAX_FILE_SIZE) {
+      toastError("Arquivo muito grande. O limite é 15MB.");
+      e.target.value = "";
+      setFile(null);
+      return;
+    }
+    setFile(selected);
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -51,9 +65,11 @@ function UploadModal({ open, onClose, onCreated }: { open: boolean; onClose: () 
           <input
             type="file"
             required
-            onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+            accept={ACCEPTED_TYPES}
+            onChange={handleFileChange}
             className="mt-1 w-full text-sm"
           />
+          <span className="text-xs text-slate-400">PDF, imagem ou Word — até 15MB.</span>
         </label>
         <PrimaryButton type="submit" disabled={loading}>
           {loading ? "Enviando..." : "Enviar documento"}
