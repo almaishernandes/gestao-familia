@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Crown, User, Shield, ChevronRight } from "lucide-react";
+import { Crown, User, Shield, ChevronRight, Copy, Share2, KeyRound } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { Modal } from "@/components/ui/Modal";
@@ -16,6 +16,49 @@ const ROLE_LABEL: Record<string, string> = {
   adult: "Adulto",
   dependent: "Dependente",
 };
+
+function InviteCodeCard() {
+  const familyId = useAppStore((s) => s.familyId);
+  const [code, setCode] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!familyId) return;
+    familyService.fetchInviteCode(familyId).then(setCode).catch(() => toastError("Não foi possível carregar o código de convite."));
+  }, [familyId]);
+
+  function handleCopy() {
+    if (!code) return;
+    navigator.clipboard.writeText(code);
+    toastSuccess("Código copiado!");
+  }
+
+  function handleShare() {
+    if (!code) return;
+    const text = `Vem pra nossa família no Gestão Família! Use este código de convite ao criar sua conta: ${code}\nhttps://familia.institutohernandes.org`;
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
+  }
+
+  return (
+    <Card className="p-5">
+      <div className="flex items-center gap-2 mb-1">
+        <KeyRound className="h-4 w-4 text-sage-500" />
+        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">Código de convite da família</h3>
+      </div>
+      <p className="text-xs text-slate-400 mb-3">Compartilhe com quem você quer adicionar — a pessoa cria a própria conta e usa esse código.</p>
+      <div className="flex items-center gap-2 flex-wrap">
+        <span className="font-mono font-semibold text-lg tracking-widest text-sage-600 bg-sage-50 dark:bg-sage-600/20 rounded-xl px-4 py-2">
+          {code ?? "..."}
+        </span>
+        <button onClick={handleCopy} className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700">
+          <Copy className="h-4 w-4 text-slate-500" />
+        </button>
+        <button onClick={handleShare} className="p-2.5 rounded-xl border border-slate-200 dark:border-slate-600 hover:bg-slate-50 dark:hover:bg-slate-700">
+          <Share2 className="h-4 w-4 text-slate-500" />
+        </button>
+      </div>
+    </Card>
+  );
+}
 
 const ROLE_ICON: Record<string, typeof Crown> = {
   owner: Crown,
@@ -129,6 +172,8 @@ export function DashboardPage() {
           Selecione um membro para ver e atualizar os dados dele.
         </p>
       </div>
+
+      <InviteCodeCard />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         {members.map((m) => {

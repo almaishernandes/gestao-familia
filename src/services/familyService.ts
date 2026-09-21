@@ -37,6 +37,12 @@ export async function fetchMyFamily(userId: string) {
   return { familyId, members: familyMembers };
 }
 
+export async function fetchInviteCode(familyId: string): Promise<string | null> {
+  const { data, error } = await supabase.from("families").select("invite_code").eq("id", familyId).maybeSingle();
+  if (error) throw error;
+  return data?.invite_code ?? null;
+}
+
 export interface ProfileDetails {
   fullName: string;
   displayName: string | null;
