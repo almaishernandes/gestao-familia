@@ -660,6 +660,7 @@ set search_path = public
 as $$
 declare
   v_family_id uuid;
+  v_role public.family_role;
 begin
   select id into v_family_id from public.families where invite_code = p_invite_code;
 
@@ -671,15 +672,27 @@ begin
   values (auth.uid(), p_full_name)
   on conflict (id) do update set full_name = excluded.full_name;
 
+  -- O primeiro membro a entrar numa família (criada pelo admin da
+  -- plataforma, sem nenhum membro ainda) vira o responsável (owner).
+  if exists (select 1 from public.family_members where family_id = v_family_id) then
+    v_role := 'adult';
+  else
+    v_role := 'owner';
+  end if;
+
   insert into public.family_members (family_id, profile_id, role)
-  values (v_family_id, auth.uid(), 'adult')
+  values (v_family_id, auth.uid(), v_role)
   on conflict (family_id, profile_id) do nothing;
 
   return v_family_id;
 end;
 $$;
 
-grant execute on function public.create_family(text, text) to authenticated;
+-- create_family não pode ser chamada por usuários comuns: só o admin da
+-- plataforma cria famílias novas, via admin_create_family (seção 12).
+-- Famílias já existentes cadastram membros livremente por invite_code.
+revoke execute on function public.create_family(text, text) from public;
+revoke execute on function public.create_family(text, text) from authenticated;
 grant execute on function public.join_family_by_code(text, text) to authenticated;
 
 -- ============================================================================
@@ -768,3 +781,62 @@ alter publication supabase_realtime add table
   public.trip_expenses,
   public.calendar_events,
   public.purchase_receipts;
+
+-- ============================================================================
+-- 12. ADMIN DA PLATAFORMA (multi-família)
+-- ============================================================================
+-- Permite que administradores da plataforma (donos do Instituto Hernandes)
+-- gerenciem todas as famílias cadastradas sem precisar ser membro delas.
+-- Bootstrap de admins é manual — ver instruções no final desta seção.
+
+create table public.platform_admins (
+  profile_id uuid primary key references public.profiles(id) on delete cascade,
+  created_at timestamptz not null default now()
+);
+
+alter table public.platform_admins enable row level security;
+
+create or replace function public.is_platform_admin()
+returns boolean
+language sql
+security definer
+stable
+as $$
+  select exists (select 1 from public.platform_admins where profile_id = auth.uid());
+$$;
+
+create policy "platform_admins: admins can read" on public.platform_admins
+  for select using (public.is_platform_admin());
+
+create policy "families: platform admins can read all" on public.families
+  for select using (public.is_platform_admin());
+
+create policy "family_members: platform admins can read all" on public.family_members
+  for select using (public.is_platform_admin());
+
+create or replace function public.admin_create_family(p_name text)
+returns table (family_id uuid, invite_code text)
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_family_id uuid;
+  v_invite_code text;
+begin
+  if not public.is_platform_admin() then
+    raise exception 'Apenas administradores da plataforma podem criar famílias por aqui.';
+  end if;
+
+  insert into public.families (name) values (p_name)
+  returning id, families.invite_code into v_family_id, v_invite_code;
+
+  return query select v_family_id, v_invite_code;
+end;
+$$;
+
+grant execute on function public.admin_create_family(text) to authenticated;
+
+-- Bootstrap: depois de aplicar o schema, torne seu usuário admin rodando
+-- (uma vez): insert into public.platform_admins (profile_id)
+--            select id from auth.users where email = 'seu-email@exemplo.com';

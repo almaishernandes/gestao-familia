@@ -1,4 +1,5 @@
 import { useEffect } from "react";
+import { Routes, Route } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Home } from "lucide-react";
 import { Sidebar } from "@/components/layout/Sidebar";
@@ -8,6 +9,7 @@ import { DashboardPage } from "@/pages/DashboardPage";
 import { MuralPage } from "@/pages/MuralPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { OnboardingPage } from "@/pages/OnboardingPage";
+import { AdminPage } from "@/pages/AdminPage";
 import { ComprasPage } from "@/pages/ComprasPage";
 import { NutricaoPage } from "@/pages/NutricaoPage";
 import { SaudePage } from "@/pages/SaudePage";
@@ -46,7 +48,7 @@ function LoadingScreen() {
   );
 }
 
-export default function App() {
+function FamilyApp() {
   const { activeModule, theme } = useAppStore();
   const { session, loading: sessionLoading } = useSession();
   const { loading: familyLoading, hasFamily, reload } = useFamilyContext(session?.user.id);
@@ -79,5 +81,14 @@ export default function App() {
       <MobileTabBar />
       <ToastHost />
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <Routes>
+      <Route path="/admin" element={<AdminPage />} />
+      <Route path="/*" element={<FamilyApp />} />
+    </Routes>
   );
 }

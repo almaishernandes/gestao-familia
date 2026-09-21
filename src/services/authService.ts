@@ -17,14 +17,6 @@ export async function signOut() {
   if (error) throw error;
 }
 
-export async function createFamily(name: string, fullName: string) {
-  const { data, error } = await supabase
-    .rpc("create_family", { p_name: name, p_full_name: fullName })
-    .single();
-  if (error) throw error;
-  return data as { family_id: string; invite_code: string };
-}
-
 export async function joinFamilyByCode(inviteCode: string, fullName: string) {
   const { data, error } = await supabase.rpc("join_family_by_code", {
     p_invite_code: inviteCode,

@@ -2,6 +2,7 @@
 -- Rode isto ANTES de rodar schema.sql novamente, apenas se puder perder os dados atuais.
 
 drop table if exists
+  public.platform_admins,
   public.purchase_receipts,
   public.comments,
   public.calendar_events,
@@ -37,6 +38,8 @@ drop function if exists public.my_family_ids();
 drop function if exists public.my_role_in(uuid);
 drop function if exists public.create_family(text, text);
 drop function if exists public.join_family_by_code(text, text);
+drop function if exists public.is_platform_admin();
+drop function if exists public.admin_create_family(text);
 
 drop type if exists public.calendar_event_type;
 drop type if exists public.calendar_event_source;
