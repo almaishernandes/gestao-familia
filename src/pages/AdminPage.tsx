@@ -2,16 +2,104 @@ import { useEffect, useState, useCallback } from "react";
 import { Home, Plus, Copy, Share2, Users, ShieldAlert } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
-import { TextField, PrimaryButton } from "@/components/ui/Field";
+import { TextField, SelectField, PrimaryButton } from "@/components/ui/Field";
 import { ToastHost } from "@/components/shared/ToastHost";
 import { toastSuccess, toastError } from "@/stores/useToastStore";
 import { useSession } from "@/hooks/useSession";
 import { LoginPage } from "@/pages/LoginPage";
 import * as adminService from "@/services/adminService";
 import { signOut } from "@/services/authService";
-import type { AdminFamilyRow } from "@/services/adminService";
+import type { AdminFamilyRow, SubscriptionStatus } from "@/services/adminService";
+import { cn } from "@/lib/utils";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+const STATUS_LABEL: Record<SubscriptionStatus, string> = {
+  trial: "Em teste",
+  ativa: "Em dia",
+  atrasada: "Atrasada",
+  cancelada: "Cancelada",
+};
+
+const STATUS_COLOR: Record<SubscriptionStatus, string> = {
+  trial: "bg-sky-50 text-sky-600 dark:bg-sky-600/20 dark:text-sky-400",
+  ativa: "bg-sage-50 text-sage-600 dark:bg-sage-600/20 dark:text-sage-400",
+  atrasada: "bg-amber-50 text-amber-600 dark:bg-amber-600/20 dark:text-amber-400",
+  cancelada: "bg-terracotta-50 text-terracotta-500 dark:bg-terracotta-600/20 dark:text-terracotta-400",
+};
+
+function SubscriptionModal({
+  family,
+  open,
+  onClose,
+  onSaved,
+}: {
+  family: AdminFamilyRow | null;
+  open: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [status, setStatus] = useState<SubscriptionStatus>("trial");
+  const [price, setPrice] = useState("");
+  const [nextDueAt, setNextDueAt] = useState("");
+  const [lastPaymentAt, setLastPaymentAt] = useState("");
+  const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    if (!family) return;
+    setStatus(family.subscriptionStatus);
+    setPrice(family.subscriptionPrice != null ? String(family.subscriptionPrice) : "");
+    setNextDueAt(family.nextDueAt ?? "");
+    setLastPaymentAt(family.lastPaymentAt ?? "");
+    setNotes(family.paymentNotes ?? "");
+  }, [family]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!family) return;
+    setLoading(true);
+    try {
+      await adminService.adminUpdateSubscription(
+        family.id,
+        status,
+        price ? Number(price) : null,
+        nextDueAt || null,
+        lastPaymentAt || null,
+        notes || null
+      );
+      toastSuccess("Assinatura atualizada.");
+      onSaved();
+      onClose();
+    } catch {
+      toastError("Não foi possível atualizar a assinatura.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title={`Assinatura — ${family?.name ?? ""}`}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <SelectField label="Status" value={status} onChange={(e) => setStatus(e.target.value as SubscriptionStatus)}>
+          <option value="trial">Em teste</option>
+          <option value="ativa">Em dia</option>
+          <option value="atrasada">Atrasada</option>
+          <option value="cancelada">Cancelada</option>
+        </SelectField>
+        <TextField label="Valor mensal (R$)" type="number" value={price} onChange={(e) => setPrice(e.target.value)} />
+        <div className="grid grid-cols-2 gap-3">
+          <TextField label="Próximo vencimento" type="date" value={nextDueAt} onChange={(e) => setNextDueAt(e.target.value)} />
+          <TextField label="Último pagamento" type="date" value={lastPaymentAt} onChange={(e) => setLastPaymentAt(e.target.value)} />
+        </div>
+        <TextField label="Observações" value={notes} onChange={(e) => setNotes(e.target.value)} />
+        <PrimaryButton type="submit" disabled={loading}>
+          {loading ? "Salvando..." : "Salvar"}
+        </PrimaryButton>
+      </form>
+    </Modal>
+  );
+}
 
 function NewFamilyModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
   const [name, setName] = useState("");
@@ -75,6 +163,7 @@ function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [subscriptionTarget, setSubscriptionTarget] = useState<AdminFamilyRow | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -152,6 +241,7 @@ function AdminDashboard() {
               <tr className="border-b border-slate-100 dark:border-slate-700 text-left text-xs text-slate-400">
                 <th className="px-5 py-3 font-medium">Família</th>
                 <th className="px-5 py-3 font-medium">Membros</th>
+                <th className="px-5 py-3 font-medium">Assinatura</th>
                 <th className="px-5 py-3 font-medium">Código</th>
                 <th className="px-5 py-3 font-medium">Criada em</th>
                 <th className="px-5 py-3 font-medium"></th>
@@ -166,6 +256,14 @@ function AdminDashboard() {
                       <Users className="h-3.5 w-3.5" />
                       {f.memberCount}
                     </span>
+                  </td>
+                  <td className="px-5 py-3">
+                    <button
+                      onClick={() => setSubscriptionTarget(f)}
+                      className={cn("text-xs font-medium rounded-full px-2.5 py-1 hover:opacity-80", STATUS_COLOR[f.subscriptionStatus])}
+                    >
+                      {STATUS_LABEL[f.subscriptionStatus]}
+                    </button>
                   </td>
                   <td className="px-5 py-3">
                     <span className="font-mono text-xs bg-slate-50 dark:bg-slate-700 rounded px-2 py-1">{f.inviteCode}</span>
@@ -194,6 +292,12 @@ function AdminDashboard() {
       </main>
 
       <NewFamilyModal open={modalOpen} onClose={() => setModalOpen(false)} onCreated={reload} />
+      <SubscriptionModal
+        family={subscriptionTarget}
+        open={!!subscriptionTarget}
+        onClose={() => setSubscriptionTarget(null)}
+        onSaved={reload}
+      />
       <ToastHost />
     </div>
   );

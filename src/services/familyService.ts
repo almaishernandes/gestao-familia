@@ -37,6 +37,27 @@ export async function fetchMyFamily(userId: string) {
   return { familyId, members: familyMembers };
 }
 
+export interface SubscriptionInfo {
+  status: "trial" | "ativa" | "atrasada" | "cancelada";
+  trialEndsAt: string | null;
+  nextDueAt: string | null;
+}
+
+export async function fetchSubscriptionInfo(familyId: string): Promise<SubscriptionInfo | null> {
+  const { data, error } = await supabase
+    .from("families")
+    .select("subscription_status, trial_ends_at, next_due_at")
+    .eq("id", familyId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) return null;
+  return {
+    status: data.subscription_status,
+    trialEndsAt: data.trial_ends_at,
+    nextDueAt: data.next_due_at,
+  };
+}
+
 export async function fetchInviteCode(familyId: string): Promise<string | null> {
   const { data, error } = await supabase.from("families").select("invite_code").eq("id", familyId).maybeSingle();
   if (error) throw error;

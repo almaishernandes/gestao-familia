@@ -16,11 +16,19 @@ create extension if not exists "pgcrypto";
 -- 1. FAMÍLIAS & PERFIS
 -- ============================================================================
 
+create type public.subscription_status as enum ('trial', 'ativa', 'atrasada', 'cancelada');
+
 create table public.families (
   id uuid primary key default gen_random_uuid(),
   name text not null,
   avatar_url text,
   invite_code text not null unique default substr(md5(random()::text), 1, 8),
+  subscription_status public.subscription_status not null default 'trial',
+  subscription_price numeric(10,2),
+  trial_ends_at date default (current_date + interval '15 days'),
+  next_due_at date,
+  last_payment_at date,
+  payment_notes text,
   created_at timestamptz not null default now()
 );
 
@@ -836,6 +844,39 @@ end;
 $$;
 
 grant execute on function public.admin_create_family(text) to authenticated;
+
+-- Admin edita o status de assinatura/pagamento de uma família (RLS de
+-- "families" já permite update só pelo owner da família — este RPC dá
+-- esse poder também ao admin da plataforma).
+create or replace function public.admin_update_subscription(
+  p_family_id uuid,
+  p_status public.subscription_status,
+  p_price numeric,
+  p_next_due_at date,
+  p_last_payment_at date,
+  p_notes text
+)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_platform_admin() then
+    raise exception 'Apenas administradores da plataforma podem alterar a assinatura.';
+  end if;
+
+  update public.families
+  set subscription_status = p_status,
+      subscription_price = p_price,
+      next_due_at = p_next_due_at,
+      last_payment_at = p_last_payment_at,
+      payment_notes = p_notes
+  where id = p_family_id;
+end;
+$$;
+
+grant execute on function public.admin_update_subscription(uuid, public.subscription_status, numeric, date, date, text) to authenticated;
 
 -- Bootstrap: depois de aplicar o schema, torne seu usuário admin rodando
 -- (uma vez): insert into public.platform_admins (profile_id)

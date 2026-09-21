@@ -40,10 +40,12 @@ drop function if exists public.create_family(text, text);
 drop function if exists public.join_family_by_code(text, text);
 drop function if exists public.is_platform_admin();
 drop function if exists public.admin_create_family(text);
+drop function if exists public.admin_update_subscription(uuid, public.subscription_status, numeric, date, date, text);
 
 drop type if exists public.calendar_event_type;
 drop type if exists public.calendar_event_source;
 drop type if exists public.transaction_kind;
+drop type if exists public.subscription_status;
 drop type if exists public.exam_status;
 drop type if exists public.funding_source_type;
 drop type if exists public.trip_expense_category;
