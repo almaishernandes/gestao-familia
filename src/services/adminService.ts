@@ -61,6 +61,11 @@ export async function adminCreateFamily(name: string): Promise<{ familyId: strin
   return { familyId: row.family_id, inviteCode: row.invite_code };
 }
 
+export async function adminDeleteFamily(familyId: string) {
+  const { error } = await supabase.rpc("admin_delete_family", { p_family_id: familyId });
+  if (error) throw error;
+}
+
 export async function adminUpdateSubscription(
   familyId: string,
   status: SubscriptionStatus,

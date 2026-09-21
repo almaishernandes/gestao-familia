@@ -41,6 +41,7 @@ drop function if exists public.join_family_by_code(text, text);
 drop function if exists public.is_platform_admin();
 drop function if exists public.admin_create_family(text);
 drop function if exists public.admin_update_subscription(uuid, public.subscription_status, numeric, date, date, text);
+drop function if exists public.admin_delete_family(uuid);
 
 drop type if exists public.calendar_event_type;
 drop type if exists public.calendar_event_source;

@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import { Home, Plus, Copy, Share2, Users, ShieldAlert } from "lucide-react";
+import { Home, Plus, Copy, Share2, Users, ShieldAlert, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { TextField, SelectField, PrimaryButton } from "@/components/ui/Field";
@@ -158,12 +158,73 @@ function NewFamilyModal({ open, onClose, onCreated }: { open: boolean; onClose: 
   );
 }
 
+function DeleteFamilyModal({
+  family,
+  open,
+  onClose,
+  onDeleted,
+}: {
+  family: AdminFamilyRow | null;
+  open: boolean;
+  onClose: () => void;
+  onDeleted: () => void;
+}) {
+  const [confirmText, setConfirmText] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    setConfirmText("");
+  }, [family]);
+
+  async function handleDelete() {
+    if (!family) return;
+    setLoading(true);
+    try {
+      await adminService.adminDeleteFamily(family.id);
+      toastSuccess("Família excluída.");
+      onDeleted();
+      onClose();
+    } catch {
+      toastError("Não foi possível excluir a família.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Excluir família">
+      <div className="space-y-4">
+        <p className="text-sm text-slate-600 dark:text-slate-300">
+          Isso apaga <strong>permanentemente</strong> a família <strong>{family?.name}</strong> e tudo que pertence a
+          ela — listas de compras, viagens, posts, documentos, tudo. Não tem como desfazer.
+        </p>
+        <p className="text-sm text-slate-600 dark:text-slate-300">
+          Digite <strong>{family?.name}</strong> abaixo para confirmar.
+        </p>
+        <input
+          value={confirmText}
+          onChange={(e) => setConfirmText(e.target.value)}
+          className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-terracotta-400"
+        />
+        <button
+          onClick={handleDelete}
+          disabled={loading || confirmText !== family?.name}
+          className="w-full rounded-xl bg-terracotta-500 hover:bg-terracotta-600 disabled:opacity-40 text-white font-medium py-2.5 text-sm"
+        >
+          {loading ? "Excluindo..." : "Excluir permanentemente"}
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
 function AdminDashboard() {
   const [families, setFamilies] = useState<AdminFamilyRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch] = useState("");
   const [subscriptionTarget, setSubscriptionTarget] = useState<AdminFamilyRow | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<AdminFamilyRow | null>(null);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -279,6 +340,9 @@ function AdminDashboard() {
                       <button onClick={() => shareCode(f.name, f.inviteCode)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
                         <Share2 className="h-3.5 w-3.5 text-slate-400" />
                       </button>
+                      <button onClick={() => setDeleteTarget(f)} className="p-1.5 rounded-lg hover:bg-terracotta-50 dark:hover:bg-terracotta-600/20">
+                        <Trash2 className="h-3.5 w-3.5 text-slate-400 hover:text-terracotta-500" />
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -297,6 +361,12 @@ function AdminDashboard() {
         open={!!subscriptionTarget}
         onClose={() => setSubscriptionTarget(null)}
         onSaved={reload}
+      />
+      <DeleteFamilyModal
+        family={deleteTarget}
+        open={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onDeleted={reload}
       />
       <ToastHost />
     </div>

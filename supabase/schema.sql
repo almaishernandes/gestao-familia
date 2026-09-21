@@ -878,6 +878,25 @@ $$;
 
 grant execute on function public.admin_update_subscription(uuid, public.subscription_status, numeric, date, date, text) to authenticated;
 
+-- Admin apaga uma família (e tudo que pertence a ela, em cascata: listas,
+-- viagens, posts, documentos etc. — via ON DELETE CASCADE em family_id).
+create or replace function public.admin_delete_family(p_family_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if not public.is_platform_admin() then
+    raise exception 'Apenas administradores da plataforma podem excluir famílias.';
+  end if;
+
+  delete from public.families where id = p_family_id;
+end;
+$$;
+
+grant execute on function public.admin_delete_family(uuid) to authenticated;
+
 -- Bootstrap: depois de aplicar o schema, torne seu usuário admin rodando
 -- (uma vez): insert into public.platform_admins (profile_id)
 --            select id from auth.users where email = 'seu-email@exemplo.com';
