@@ -20,13 +20,13 @@ export interface NavItem {
 
 export const NAV_ITEMS: NavItem[] = [
   { key: "dashboard", label: "Início", icon: LayoutDashboard },
+  { key: "feed", label: "Mural", icon: Rss },
+  { key: "calendario", label: "Agenda", icon: CalendarDays },
   { key: "compras", label: "Compras", icon: ShoppingCart },
   { key: "nutricao", label: "Cardápio", icon: Salad },
   { key: "saude", label: "Saúde", icon: HeartPulse },
   { key: "viagens", label: "Viagens", icon: Plane },
   { key: "financas", label: "Finanças", icon: Wallet },
-  { key: "feed", label: "Mural", icon: Rss },
-  { key: "calendario", label: "Agenda", icon: CalendarDays },
   { key: "documentos", label: "Documentos", icon: FolderLock },
 ];
 
