@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
-import { Plus, ChevronLeft, ChevronRight, CalendarClock, ListChecks, Bell, CalendarDays } from "lucide-react";
+import { Plus, ChevronLeft, ChevronRight, CalendarClock, ListChecks, Bell, CalendarDays, Trash2 } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Modal } from "@/components/ui/Modal";
 import { TextField, SelectField, PrimaryButton } from "@/components/ui/Field";
@@ -45,45 +45,86 @@ const TYPE_COLOR: Record<CalendarEventType, string> = {
 
 const WEEKDAY_LABELS = ["D", "S", "T", "Q", "Q", "S", "S"];
 
-function NewEventModal({ open, onClose, onCreated, defaultDate }: { open: boolean; onClose: () => void; onCreated: () => void; defaultDate: Date }) {
+function EventModal({
+  open,
+  onClose,
+  onSaved,
+  defaultDate,
+  event,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSaved: () => void;
+  defaultDate: Date;
+  event?: CalendarEvent | null;
+}) {
   const { familyId, currentUserId, members } = useAppStore();
+  const isEditing = !!event;
   const [title, setTitle] = useState("");
   const [date, setDate] = useState(format(defaultDate, "yyyy-MM-dd"));
   const [time, setTime] = useState("09:00");
   const [eventType, setEventType] = useState<CalendarEventType>("compromisso");
   const [assignedTo, setAssignedTo] = useState("");
   const [loading, setLoading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => {
-    setDate(format(defaultDate, "yyyy-MM-dd"));
-  }, [defaultDate]);
+    if (!open) return;
+    if (event) {
+      const d = new Date(event.startsAt);
+      setTitle(event.title);
+      setDate(format(d, "yyyy-MM-dd"));
+      setTime(format(d, "HH:mm"));
+      setEventType(event.eventType);
+      setAssignedTo(event.assignedTo ?? "");
+    } else {
+      setTitle("");
+      setDate(format(defaultDate, "yyyy-MM-dd"));
+      setTime("09:00");
+      setEventType("compromisso");
+      setAssignedTo("");
+    }
+  }, [open, event, defaultDate]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     if (!familyId || !currentUserId || !title || !date) return;
     setLoading(true);
     try {
-      await calendarService.createEvent(
-        familyId,
-        currentUserId,
-        title,
-        new Date(`${date}T${time}`).toISOString(),
-        eventType,
-        assignedTo || null
-      );
-      toastSuccess("Adicionado à agenda!");
-      setTitle("");
-      onCreated();
+      const isoStartsAt = new Date(`${date}T${time}`).toISOString();
+      if (isEditing && event) {
+        await calendarService.updateEvent(event.id, title, isoStartsAt, eventType, assignedTo || null);
+        toastSuccess("Atualizado!");
+      } else {
+        await calendarService.createEvent(familyId, currentUserId, title, isoStartsAt, eventType, assignedTo || null);
+        toastSuccess("Adicionado à agenda!");
+      }
+      onSaved();
       onClose();
     } catch {
-      toastError("Não foi possível criar.");
+      toastError(isEditing ? "Não foi possível salvar as alterações." : "Não foi possível criar.");
     } finally {
       setLoading(false);
     }
   }
 
+  async function handleDelete() {
+    if (!event) return;
+    setDeleting(true);
+    try {
+      await calendarService.deleteEvent(event.id);
+      toastSuccess("Removido da agenda.");
+      onSaved();
+      onClose();
+    } catch {
+      toastError("Não foi possível remover.");
+    } finally {
+      setDeleting(false);
+    }
+  }
+
   return (
-    <Modal open={open} onClose={onClose} title="Novo na agenda">
+    <Modal open={open} onClose={onClose} title={isEditing ? "Editar item da agenda" : "Novo na agenda"}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <div className="grid grid-cols-3 gap-1 p-1 rounded-xl bg-slate-100 dark:bg-slate-700">
           {(Object.keys(TYPE_LABEL) as CalendarEventType[]).map((t) => (
@@ -114,8 +155,19 @@ function NewEventModal({ open, onClose, onCreated, defaultDate }: { open: boolea
           ))}
         </SelectField>
         <PrimaryButton type="submit" disabled={loading}>
-          {loading ? "Salvando..." : "Adicionar"}
+          {loading ? "Salvando..." : isEditing ? "Salvar alterações" : "Adicionar"}
         </PrimaryButton>
+        {isEditing && (
+          <button
+            type="button"
+            onClick={handleDelete}
+            disabled={deleting}
+            className="w-full flex items-center justify-center gap-1.5 text-sm text-terracotta-500 hover:text-terracotta-600 py-1.5"
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+            {deleting ? "Removendo..." : "Remover da agenda"}
+          </button>
+        )}
       </form>
     </Modal>
   );
@@ -128,6 +180,7 @@ export function CalendarioPage() {
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [memberFilter, setMemberFilter] = useState<string>("all");
   const [modalOpen, setModalOpen] = useState(false);
+  const [editingEvent, setEditingEvent] = useState<CalendarEvent | null>(null);
 
   const reload = useCallback(async () => {
     if (!familyId) return;
@@ -299,14 +352,14 @@ export function CalendarioPage() {
                   <Icon className="h-4 w-4" />
                 </div>
               )}
-              <div className="flex-1 min-w-0">
+              <button onClick={() => setEditingEvent(event)} className="flex-1 min-w-0 text-left">
                 <p className={cn("text-sm font-medium text-slate-800 dark:text-slate-100", event.isDone && "line-through text-slate-400")}>
                   {event.title}
                 </p>
                 <p className="text-xs text-slate-400">
                   {format(new Date(event.startsAt), "d MMM 'às' HH:mm", { locale: ptBR })} · {memberName(event.assignedTo)}
                 </p>
-              </div>
+              </button>
               <span className={cn("text-[10px] rounded-full px-2 py-0.5 shrink-0 hidden sm:inline", TYPE_COLOR[event.eventType])}>
                 {TYPE_LABEL[event.eventType]}
               </span>
@@ -320,11 +373,18 @@ export function CalendarioPage() {
         </div>
       </div>
 
-      <NewEventModal
+      <EventModal
         open={modalOpen}
         onClose={() => setModalOpen(false)}
-        onCreated={reload}
+        onSaved={reload}
         defaultDate={selectedDate ?? new Date()}
+      />
+      <EventModal
+        open={!!editingEvent}
+        onClose={() => setEditingEvent(null)}
+        onSaved={reload}
+        defaultDate={selectedDate ?? new Date()}
+        event={editingEvent}
       />
     </div>
   );

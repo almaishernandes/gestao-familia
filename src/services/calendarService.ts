@@ -50,6 +50,20 @@ export async function createEvent(
   if (error) throw error;
 }
 
+export async function updateEvent(
+  id: string,
+  title: string,
+  startsAt: string,
+  eventType: CalendarEventType,
+  assignedTo: string | null
+) {
+  const { error } = await supabase
+    .from("calendar_events")
+    .update({ title, starts_at: startsAt, event_type: eventType, assigned_to: assignedTo })
+    .eq("id", id);
+  if (error) throw error;
+}
+
 export async function toggleDone(id: string, isDone: boolean) {
   const { error } = await supabase.from("calendar_events").update({ is_done: isDone }).eq("id", id);
   if (error) throw error;
