@@ -21,7 +21,7 @@ export async function fetchMyFamily(userId: string) {
 
   const { data: members, error: membersError } = await supabase
     .from("family_members")
-    .select("role, can_view_finances, profiles(id, full_name, avatar_url)")
+    .select("role, relationship, can_view_finances, profiles(id, full_name, avatar_url)")
     .eq("family_id", familyId);
 
   if (membersError) throw membersError;
@@ -31,6 +31,7 @@ export async function fetchMyFamily(userId: string) {
     fullName: row.profiles.full_name,
     avatarUrl: row.profiles.avatar_url,
     role: row.role,
+    relationship: row.relationship,
     canViewFinances: row.can_view_finances,
   }));
 
@@ -70,13 +71,14 @@ export interface ProfileDetails {
   birthDate: string | null;
   phone: string | null;
   role: "owner" | "adult" | "dependent";
+  relationship: string | null;
   canViewFinances: boolean;
 }
 
 export async function fetchProfileDetails(familyId: string, profileId: string): Promise<ProfileDetails | null> {
   const { data, error } = await supabase
     .from("family_members")
-    .select("role, can_view_finances, profiles(full_name, display_name, birth_date, phone)")
+    .select("role, relationship, can_view_finances, profiles(full_name, display_name, birth_date, phone)")
     .eq("family_id", familyId)
     .eq("profile_id", profileId)
     .maybeSingle();
@@ -89,6 +91,7 @@ export async function fetchProfileDetails(familyId: string, profileId: string): 
     birthDate: profile.birth_date,
     phone: profile.phone,
     role: data.role,
+    relationship: data.relationship,
     canViewFinances: data.can_view_finances,
   };
 }
@@ -96,7 +99,14 @@ export async function fetchProfileDetails(familyId: string, profileId: string): 
 export async function updateProfileDetails(
   familyId: string,
   profileId: string,
-  fields: { fullName: string; displayName: string; birthDate: string; phone: string; canViewFinances: boolean }
+  fields: {
+    fullName: string;
+    displayName: string;
+    birthDate: string;
+    phone: string;
+    relationship: string;
+    canViewFinances: boolean;
+  }
 ) {
   const { error: profileError } = await supabase
     .from("profiles")
@@ -111,7 +121,7 @@ export async function updateProfileDetails(
 
   const { error: memberError } = await supabase
     .from("family_members")
-    .update({ can_view_finances: fields.canViewFinances })
+    .update({ can_view_finances: fields.canViewFinances, relationship: fields.relationship || null })
     .eq("family_id", familyId)
     .eq("profile_id", profileId);
   if (memberError) throw memberError;

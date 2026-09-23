@@ -9,6 +9,7 @@ export interface Profile {
 
 export interface FamilyMember extends Profile {
   role: FamilyRole;
+  relationship: string | null;
   canViewFinances: boolean;
 }
 

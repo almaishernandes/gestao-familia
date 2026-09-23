@@ -48,7 +48,8 @@ create table public.family_members (
   id uuid primary key default gen_random_uuid(),
   family_id uuid not null references public.families(id) on delete cascade,
   profile_id uuid not null references public.profiles(id) on delete cascade,
-  role public.family_role not null default 'adult',
+  role public.family_role not null default 'adult', -- uso interno: permissões (não aparece na tela)
+  relationship text, -- grau de parentesco exibido na tela: Pai, Mãe, Filho, Filha, etc.
   can_view_finances boolean not null default true,
   joined_at timestamptz not null default now(),
   unique (family_id, profile_id)

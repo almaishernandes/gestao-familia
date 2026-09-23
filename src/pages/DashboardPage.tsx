@@ -1,21 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import { motion } from "framer-motion";
-import { Crown, User, Shield, ChevronRight, Copy, Share2, KeyRound } from "lucide-react";
+import { Crown, Users, ChevronRight, Copy, Share2, KeyRound } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Avatar } from "@/components/ui/Avatar";
 import { Modal } from "@/components/ui/Modal";
-import { TextField, PrimaryButton } from "@/components/ui/Field";
+import { TextField, SelectField, PrimaryButton } from "@/components/ui/Field";
 import { useAppStore } from "@/stores/useAppStore";
 import { toastSuccess, toastError } from "@/stores/useToastStore";
 import * as familyService from "@/services/familyService";
 import type { ProfileDetails } from "@/services/familyService";
 import { cn } from "@/lib/utils";
 
-const ROLE_LABEL: Record<string, string> = {
-  owner: "Responsável",
-  adult: "Adulto",
-  dependent: "Dependente",
-};
+const RELATIONSHIP_OPTIONS = ["Pai", "Mãe", "Filho", "Filha", "Avô", "Avó", "Cônjuge", "Tio", "Tia", "Outro"];
 
 function InviteCodeCard() {
   const familyId = useAppStore((s) => s.familyId);
@@ -60,12 +56,6 @@ function InviteCodeCard() {
   );
 }
 
-const ROLE_ICON: Record<string, typeof Crown> = {
-  owner: Crown,
-  adult: User,
-  dependent: Shield,
-};
-
 function MemberEditModal({
   profileId,
   fullName,
@@ -85,6 +75,7 @@ function MemberEditModal({
   const [displayName, setDisplayName] = useState("");
   const [birthDate, setBirthDate] = useState("");
   const [phone, setPhone] = useState("");
+  const [relationship, setRelationship] = useState("");
   const [canViewFinances, setCanViewFinances] = useState(true);
   const [loading, setLoading] = useState(false);
 
@@ -96,6 +87,7 @@ function MemberEditModal({
     setDisplayName(data?.displayName ?? "");
     setBirthDate(data?.birthDate ?? "");
     setPhone(data?.phone ?? "");
+    setRelationship(data?.relationship ?? "");
     setCanViewFinances(data?.canViewFinances ?? true);
   }, [familyId, profileId, fullName]);
 
@@ -113,6 +105,7 @@ function MemberEditModal({
         displayName,
         birthDate,
         phone,
+        relationship,
         canViewFinances,
       });
       toastSuccess("Dados atualizados!");
@@ -129,6 +122,14 @@ function MemberEditModal({
     <Modal open={open} onClose={onClose} title={`Manutenção de ${fullName}`}>
       <form onSubmit={handleSubmit} className="space-y-4">
         <TextField label="Nome completo" required value={fullNameField} onChange={(e) => setFullNameField(e.target.value)} />
+        <SelectField label="Grau de parentesco" value={relationship} onChange={(e) => setRelationship(e.target.value)}>
+          <option value="">Selecione...</option>
+          {RELATIONSHIP_OPTIONS.map((r) => (
+            <option key={r} value={r}>
+              {r}
+            </option>
+          ))}
+        </SelectField>
         <TextField label="Nome de exibição" value={displayName} onChange={(e) => setDisplayName(e.target.value)} />
         <TextField label="Data de nascimento" type="date" value={birthDate} onChange={(e) => setBirthDate(e.target.value)} />
         <TextField label="Telefone" value={phone} onChange={(e) => setPhone(e.target.value)} />
@@ -138,9 +139,6 @@ function MemberEditModal({
             Pode ver detalhes financeiros da família
           </label>
         )}
-        <p className="text-xs text-slate-400">
-          Papel na família: <span className="font-medium">{details ? ROLE_LABEL[details.role] : "—"}</span>
-        </p>
         <PrimaryButton type="submit" disabled={loading}>
           {loading ? "Salvando..." : "Salvar"}
         </PrimaryButton>
@@ -176,31 +174,28 @@ export function DashboardPage() {
       <InviteCodeCard />
 
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        {members.map((m) => {
-          const RoleIcon = ROLE_ICON[m.role] ?? User;
-          return (
-            <Card
-              key={m.id}
-              onClick={() => setSelected({ id: m.id, fullName: m.fullName })}
-              className="p-5 cursor-pointer hover:shadow-md transition-shadow flex items-center gap-4"
-            >
-              <Avatar name={m.fullName} src={m.avatarUrl} size="lg" />
-              <div className="flex-1 min-w-0">
-                <h3 className="font-medium text-slate-900 dark:text-white truncate">{m.fullName}</h3>
-                <p
-                  className={cn(
-                    "text-xs mt-0.5 inline-flex items-center gap-1",
-                    m.role === "owner" ? "text-amber-600" : "text-slate-400"
-                  )}
-                >
-                  <RoleIcon className="h-3 w-3" />
-                  {ROLE_LABEL[m.role] ?? m.role}
-                </p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-slate-300 shrink-0" />
-            </Card>
-          );
-        })}
+        {members.map((m) => (
+          <Card
+            key={m.id}
+            onClick={() => setSelected({ id: m.id, fullName: m.fullName })}
+            className="p-5 cursor-pointer hover:shadow-md transition-shadow flex items-center gap-4"
+          >
+            <Avatar name={m.fullName} src={m.avatarUrl} size="lg" />
+            <div className="flex-1 min-w-0">
+              <h3 className="font-medium text-slate-900 dark:text-white truncate">{m.fullName}</h3>
+              <p
+                className={cn(
+                  "text-xs mt-0.5 inline-flex items-center gap-1",
+                  m.role === "owner" ? "text-amber-600" : "text-slate-400"
+                )}
+              >
+                {m.role === "owner" ? <Crown className="h-3 w-3" /> : <Users className="h-3 w-3" />}
+                {m.relationship || (m.role === "owner" ? "Responsável" : "Membro da família")}
+              </p>
+            </div>
+            <ChevronRight className="h-4 w-4 text-slate-300 shrink-0" />
+          </Card>
+        ))}
         {members.length === 0 && (
           <p className="text-sm text-slate-400 text-center py-10 col-span-full">Nenhum membro na família ainda.</p>
         )}
