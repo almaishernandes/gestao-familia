@@ -30,5 +30,5 @@ export const NAV_ITEMS: NavItem[] = [
   { key: "documentos", label: "Documentos", icon: FolderLock },
 ];
 
-// Itens priorizados na barra inferior mobile (máx. 5)
-export const MOBILE_TAB_KEYS: ModuleKey[] = ["dashboard", "compras", "nutricao", "saude", "financas"];
+// Itens fixos na barra inferior mobile — os demais ficam atrás do botão "Mais"
+export const MOBILE_TAB_KEYS: ModuleKey[] = ["dashboard", "feed", "calendario", "compras"];
