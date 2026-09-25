@@ -219,6 +219,26 @@ export function CalendarioPage() {
     return [...base].sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
   }, [filteredEvents, selectedDate]);
 
+  const groupedEvents = useMemo(() => {
+    const groups: { dateKey: string; date: Date; events: CalendarEvent[] }[] = [];
+    for (const event of listEvents) {
+      const eventDate = new Date(event.startsAt);
+      const dateKey = format(eventDate, "yyyy-MM-dd");
+      const lastGroup = groups[groups.length - 1];
+      if (lastGroup && lastGroup.dateKey === dateKey) {
+        lastGroup.events.push(event);
+      } else {
+        groups.push({ dateKey, date: eventDate, events: [event] });
+      }
+    }
+    return groups;
+  }, [listEvents]);
+
+  function goToToday() {
+    setMonthCursor(new Date());
+    setSelectedDate(null);
+  }
+
   async function handleToggleDone(id: string, done: boolean) {
     try {
       await calendarService.toggleDone(id, done);
@@ -249,17 +269,23 @@ export function CalendarioPage() {
       <div className="lg:grid lg:grid-cols-[340px_1fr] lg:gap-6 lg:items-start">
         <div className="lg:sticky lg:top-6 mb-6 lg:mb-0 mx-auto w-full max-w-sm lg:max-w-none">
           <Card className="p-4 shadow-sm">
-            <div className="flex items-center justify-between mb-3">
-              <button onClick={() => setMonthCursor((d) => subMonths(d, 1))} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
+            <div className="flex items-center justify-between mb-3 gap-2">
+              <button onClick={() => setMonthCursor((d) => subMonths(d, 1))} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 shrink-0">
                 <ChevronLeft className="h-4 w-4" />
               </button>
-              <span className="text-sm font-medium capitalize text-slate-900 dark:text-white">
+              <span className="text-sm font-medium capitalize text-slate-900 dark:text-white text-center flex-1 truncate">
                 {format(monthCursor, "MMMM 'de' yyyy", { locale: ptBR })}
               </span>
-              <button onClick={() => setMonthCursor((d) => addMonths(d, 1))} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
+              <button onClick={() => setMonthCursor((d) => addMonths(d, 1))} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 shrink-0">
                 <ChevronRight className="h-4 w-4" />
               </button>
             </div>
+            <button
+              onClick={goToToday}
+              className="w-full text-xs font-medium text-sage-600 hover:text-sage-700 border border-slate-200 dark:border-slate-600 rounded-lg py-1.5 mb-3"
+            >
+              Hoje
+            </button>
 
             <div className="grid grid-cols-7 gap-1 mb-1">
               {WEEKDAY_LABELS.map((d, i) => (
@@ -334,42 +360,63 @@ export function CalendarioPage() {
             )}
           </div>
 
-          <Card className="p-2">
-            {listEvents.map((event) => {
-          const Icon = TYPE_ICON[event.eventType];
-          const isTask = event.eventType !== "compromisso";
-          return (
-            <div key={event.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/40 group">
-              {isTask ? (
-                <input
-                  type="checkbox"
-                  checked={event.isDone}
-                  onChange={(e) => handleToggleDone(event.id, e.target.checked)}
-                  className="h-5 w-5 rounded accent-sage-500 shrink-0"
-                />
-              ) : (
-                <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center shrink-0", TYPE_COLOR[event.eventType])}>
-                  <Icon className="h-4 w-4" />
+          <div className="space-y-5">
+            {groupedEvents.map((group) => (
+              <div key={group.dateKey} className="flex gap-4">
+                <div className="flex flex-col items-center shrink-0 w-12 pt-1">
+                  <span
+                    className={cn(
+                      "h-9 w-9 rounded-full flex items-center justify-center text-base font-semibold",
+                      isToday(group.date) ? "bg-sage-500 text-white" : "text-slate-700 dark:text-slate-200"
+                    )}
+                  >
+                    {format(group.date, "d")}
+                  </span>
+                  <span className="text-[11px] text-slate-400 capitalize mt-0.5">
+                    {format(group.date, "EEE", { locale: ptBR })}
+                  </span>
                 </div>
-              )}
-              <button onClick={() => setEditingEvent(event)} className="flex-1 min-w-0 text-left">
-                <p className={cn("text-sm font-medium text-slate-800 dark:text-slate-100", event.isDone && "line-through text-slate-400")}>
-                  {event.title}
-                </p>
-                <p className="text-xs text-slate-400">
-                  {format(new Date(event.startsAt), "d MMM 'às' HH:mm", { locale: ptBR })} · {memberName(event.assignedTo)}
-                </p>
-              </button>
-              <span className={cn("text-[10px] rounded-full px-2 py-0.5 shrink-0 hidden sm:inline", TYPE_COLOR[event.eventType])}>
-                {TYPE_LABEL[event.eventType]}
-              </span>
-            </div>
-          );
-        })}
-            {listEvents.length === 0 && (
-              <EmptyState icon={CalendarDays} title="Nada por aqui" description="Adicione um compromisso, tarefa ou lembrete." />
+                <Card className="flex-1 p-2 min-w-0">
+                  {group.events.map((event) => {
+                    const Icon = TYPE_ICON[event.eventType];
+                    const isTask = event.eventType !== "compromisso";
+                    return (
+                      <div key={event.id} className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/40 group">
+                        {isTask ? (
+                          <input
+                            type="checkbox"
+                            checked={event.isDone}
+                            onChange={(e) => handleToggleDone(event.id, e.target.checked)}
+                            className="h-5 w-5 rounded accent-sage-500 shrink-0"
+                          />
+                        ) : (
+                          <div className={cn("h-9 w-9 rounded-xl flex items-center justify-center shrink-0", TYPE_COLOR[event.eventType])}>
+                            <Icon className="h-4 w-4" />
+                          </div>
+                        )}
+                        <button onClick={() => setEditingEvent(event)} className="flex-1 min-w-0 text-left">
+                          <p className={cn("text-sm font-medium text-slate-800 dark:text-slate-100", event.isDone && "line-through text-slate-400")}>
+                            {event.title}
+                          </p>
+                          <p className="text-xs text-slate-400">
+                            {format(new Date(event.startsAt), "HH:mm")} · {memberName(event.assignedTo)}
+                          </p>
+                        </button>
+                        <span className={cn("text-[10px] rounded-full px-2 py-0.5 shrink-0 hidden sm:inline", TYPE_COLOR[event.eventType])}>
+                          {TYPE_LABEL[event.eventType]}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </Card>
+              </div>
+            ))}
+            {groupedEvents.length === 0 && (
+              <Card className="p-2">
+                <EmptyState icon={CalendarDays} title="Nada por aqui" description="Adicione um compromisso, tarefa ou lembrete." />
+              </Card>
             )}
-          </Card>
+          </div>
         </div>
       </div>
 
