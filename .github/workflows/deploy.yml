@@ -1,4 +1,4 @@
-name: Deploy Gestão Família to Hostinger
+name: Deploy Agenda Família to Hostinger
 
 on:
   push:

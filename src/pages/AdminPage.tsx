@@ -247,7 +247,7 @@ function AdminDashboard() {
   }
 
   function shareCode(name: string, code: string) {
-    const text = `Olá! Sua família "${name}" já pode usar o Gestão Família 🏠\nCrie sua conta em https://familia.institutohernandes.org e use este código de convite: ${code}`;
+    const text = `Olá! Sua família "${name}" já pode usar o Agenda Família 🏠\nCrie sua conta em https://familia.institutohernandes.org e use este código de convite: ${code}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   }
 
@@ -263,7 +263,7 @@ function AdminDashboard() {
               <Home className="h-5 w-5 text-white" />
             </div>
             <span className="font-display font-semibold text-lg text-slate-900 dark:text-white">
-              Gestão Família <span className="text-slate-400 font-sans text-sm font-normal">/ admin</span>
+              Agenda Família <span className="text-slate-400 font-sans text-sm font-normal">/ admin</span>
             </span>
           </div>
           <button onClick={() => signOut()} className="text-sm text-slate-400 hover:text-slate-600">

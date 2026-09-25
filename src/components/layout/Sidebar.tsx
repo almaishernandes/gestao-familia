@@ -13,7 +13,7 @@ export function Sidebar() {
         <div className="h-9 w-9 rounded-xl2 bg-sage-500 flex items-center justify-center">
           <Home className="h-5 w-5 text-white" />
         </div>
-        <span className="font-display font-semibold text-lg text-slate-900 dark:text-white">Gestão Família</span>
+        <span className="font-display font-semibold text-lg text-slate-900 dark:text-white">Agenda Família</span>
       </div>
 
       <nav className="flex-1 overflow-y-auto py-4 px-3 space-y-1 scrollbar-thin">

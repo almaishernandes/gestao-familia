@@ -69,7 +69,7 @@ function SubscriptionBlockedScreen({ status, nextDueAt }: { status: string; next
         </p>
       )}
       <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm mt-2">
-        Fale com quem administra sua assinatura do Gestão Família para regularizar o acesso.
+        Fale com quem administra sua assinatura do Agenda Família para regularizar o acesso.
       </p>
       <button onClick={() => signOut()} className="text-sm text-sage-600 font-medium mt-2">
         Sair

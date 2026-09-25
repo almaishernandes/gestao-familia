@@ -30,7 +30,7 @@ function InviteCodeCard() {
 
   function handleShare() {
     if (!code) return;
-    const text = `Vem pra nossa família no Gestão Família! Use este código de convite ao criar sua conta: ${code}\nhttps://familia.institutohernandes.org`;
+    const text = `Vem pra nossa família no Agenda Família! Use este código de convite ao criar sua conta: ${code}\nhttps://familia.institutohernandes.org`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, "_blank");
   }
 

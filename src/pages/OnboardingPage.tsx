@@ -36,7 +36,7 @@ export function OnboardingPage({ onDone }: OnboardingPageProps) {
           </div>
           <h1 className="font-display text-2xl font-semibold text-slate-900 dark:text-white">Bem-vindo(a)!</h1>
           <p className="text-sm text-slate-400 mt-1 text-center">
-            Peça o código de convite pra quem administra a sua família no Gestão Família.
+            Peça o código de convite pra quem administra a sua família no Agenda Família.
           </p>
         </div>
 

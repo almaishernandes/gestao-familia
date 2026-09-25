@@ -1,4 +1,4 @@
-# Gestão Família
+# Agenda Família
 
 Plataforma de gestão familiar integrada (compras, cardápio, saúde, viagens, finanças).
 

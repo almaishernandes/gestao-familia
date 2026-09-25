@@ -38,7 +38,7 @@ export function LoginPage() {
           <div className="h-12 w-12 rounded-xl2 bg-sage-500 flex items-center justify-center mb-3 shadow-sm">
             <Home className="h-6 w-6 text-white" />
           </div>
-          <h1 className="font-display text-2xl font-semibold text-slate-900 dark:text-white">Gestão Família</h1>
+          <h1 className="font-display text-2xl font-semibold text-slate-900 dark:text-white">Agenda Família</h1>
           <p className="text-sm text-slate-400 mt-1">Organize, conecte e proteja sua família</p>
         </div>
 
