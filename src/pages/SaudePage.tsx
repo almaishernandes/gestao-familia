@@ -326,7 +326,7 @@ function ReceituarioTab() {
                   {p.validityDate && ` · Válida até ${format(new Date(p.validityDate + "T00:00:00"), "d/M/yyyy")}`}
                 </p>
               </div>
-              <button onClick={() => handleDelete(p.id)} className="text-slate-300 hover:text-terracotta-500">
+              <button onClick={() => handleDelete(p.id)} className="text-slate-300 hover:text-danger-500">
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
@@ -452,8 +452,8 @@ function MedicacaoTab() {
             key={med.id}
             className="flex items-center gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-700/40 group"
           >
-            <div className="h-9 w-9 rounded-xl bg-terracotta-50 dark:bg-terracotta-600/20 flex items-center justify-center">
-              <Pill className="h-4 w-4 text-terracotta-500" />
+            <div className="h-9 w-9 rounded-xl bg-danger-50 dark:bg-danger-600/20 flex items-center justify-center">
+              <Pill className="h-4 w-4 text-danger-500" />
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium text-slate-800 dark:text-slate-100">
@@ -465,7 +465,7 @@ function MedicacaoTab() {
             </div>
             <button
               onClick={() => handleRemove(med.id)}
-              className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-terracotta-500"
+              className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-danger-500"
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -604,7 +604,7 @@ function ExamesTab() {
                   </p>
                 )}
               </div>
-              <button onClick={() => handleDelete(exam.id)} className="text-slate-300 hover:text-terracotta-500">
+              <button onClick={() => handleDelete(exam.id)} className="text-slate-300 hover:text-danger-500">
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>

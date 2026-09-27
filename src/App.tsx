@@ -60,7 +60,7 @@ function SubscriptionBlockedScreen({ status, nextDueAt }: { status: string; next
 
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-slate-50 dark:bg-slate-900 p-4 text-center">
-      <AlertTriangle className="h-10 w-10 text-terracotta-500" />
+      <AlertTriangle className="h-10 w-10 text-danger-500" />
       <h1 className="font-display text-xl font-semibold text-slate-900 dark:text-white">Acesso temporariamente bloqueado</h1>
       <p className="text-sm text-slate-500 dark:text-slate-400 max-w-sm">{message}</p>
       {nextDueAt && (

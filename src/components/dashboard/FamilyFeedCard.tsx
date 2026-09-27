@@ -94,7 +94,7 @@ export function FamilyFeedCard() {
                   <span className="text-sm font-medium text-slate-800 dark:text-slate-100">
                     {post.authorName}
                   </span>
-                  <Icon className="h-3.5 w-3.5 text-terracotta-500" />
+                  <Icon className="h-3.5 w-3.5 text-danger-500" />
                   <span className="text-xs text-slate-400">
                     {formatDistanceToNow(new Date(post.createdAt), { addSuffix: true, locale: ptBR })}
                   </span>

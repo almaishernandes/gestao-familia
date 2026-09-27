@@ -230,7 +230,7 @@ export function FinancasPage() {
               <span
                 className={cn(
                   "text-sm font-medium",
-                  tx.kind === "receita" ? "text-sage-600" : "text-terracotta-500"
+                  tx.kind === "receita" ? "text-sage-600" : "text-danger-500"
                 )}
               >
                 {tx.kind === "receita" ? "+" : "-"} R$ {tx.amount.toFixed(2)}

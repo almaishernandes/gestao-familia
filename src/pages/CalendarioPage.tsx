@@ -162,7 +162,7 @@ function EventModal({
             type="button"
             onClick={handleDelete}
             disabled={deleting}
-            className="w-full flex items-center justify-center gap-1.5 text-sm text-terracotta-500 hover:text-terracotta-600 py-1.5"
+            className="w-full flex items-center justify-center gap-1.5 text-sm text-danger-500 hover:text-danger-600 py-1.5"
           >
             <Trash2 className="h-3.5 w-3.5" />
             {deleting ? "Removendo..." : "Remover da agenda"}

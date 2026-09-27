@@ -25,7 +25,7 @@ const STATUS_COLOR: Record<SubscriptionStatus, string> = {
   trial: "bg-sky-50 text-sky-600 dark:bg-sky-600/20 dark:text-sky-400",
   ativa: "bg-sage-50 text-sage-600 dark:bg-sage-600/20 dark:text-sage-400",
   atrasada: "bg-amber-50 text-amber-600 dark:bg-amber-600/20 dark:text-amber-400",
-  cancelada: "bg-terracotta-50 text-terracotta-500 dark:bg-terracotta-600/20 dark:text-terracotta-400",
+  cancelada: "bg-danger-50 text-danger-500 dark:bg-danger-600/20 dark:text-danger-400",
 };
 
 function SubscriptionModal({
@@ -204,12 +204,12 @@ function DeleteFamilyModal({
         <input
           value={confirmText}
           onChange={(e) => setConfirmText(e.target.value)}
-          className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-terracotta-400"
+          className="w-full rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-700 px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-danger-400"
         />
         <button
           onClick={handleDelete}
           disabled={loading || confirmText !== family?.name}
-          className="w-full rounded-xl bg-terracotta-500 hover:bg-terracotta-600 disabled:opacity-40 text-white font-medium py-2.5 text-sm"
+          className="w-full rounded-xl bg-danger-500 hover:bg-danger-600 disabled:opacity-40 text-white font-medium py-2.5 text-sm"
         >
           {loading ? "Excluindo..." : "Excluir permanentemente"}
         </button>
@@ -340,8 +340,8 @@ function AdminDashboard() {
                       <button onClick={() => shareCode(f.name, f.inviteCode)} className="p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700">
                         <Share2 className="h-3.5 w-3.5 text-slate-400" />
                       </button>
-                      <button onClick={() => setDeleteTarget(f)} className="p-1.5 rounded-lg hover:bg-terracotta-50 dark:hover:bg-terracotta-600/20">
-                        <Trash2 className="h-3.5 w-3.5 text-slate-400 hover:text-terracotta-500" />
+                      <button onClick={() => setDeleteTarget(f)} className="p-1.5 rounded-lg hover:bg-danger-50 dark:hover:bg-danger-600/20">
+                        <Trash2 className="h-3.5 w-3.5 text-slate-400 hover:text-danger-500" />
                       </button>
                     </div>
                   </td>
@@ -376,7 +376,7 @@ function AdminDashboard() {
 function NotAuthorized() {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center gap-3 bg-slate-50 dark:bg-slate-900 p-4 text-center">
-      <ShieldAlert className="h-10 w-10 text-terracotta-500" />
+      <ShieldAlert className="h-10 w-10 text-danger-500" />
       <h1 className="font-display text-xl font-semibold text-slate-900 dark:text-white">Acesso restrito</h1>
       <p className="text-sm text-slate-400 max-w-sm">
         Essa conta não tem permissão de administrador da plataforma. Fale com o responsável pelo Instituto Hernandes

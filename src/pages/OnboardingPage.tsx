@@ -62,7 +62,7 @@ export function OnboardingPage({ onDone }: OnboardingPageProps) {
             />
           </div>
 
-          {error && <p className="text-sm text-terracotta-500">{error}</p>}
+          {error && <p className="text-sm text-danger-500">{error}</p>}
 
           <button
             type="submit"

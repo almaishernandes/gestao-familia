@@ -219,7 +219,7 @@ function ItinerarySection({ tripId }: { tripId: string }) {
             <span className="text-xs text-slate-400 capitalize hidden sm:inline">{item.type}</span>
             <button
               onClick={() => handleDelete(item.id)}
-              className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-terracotta-500"
+              className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-danger-500"
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -344,7 +344,7 @@ function FundingSection({ tripId, onChanged }: { tripId: string; onChanged: () =
                   </button>
                   <button
                     onClick={() => handleDelete(f.id)}
-                    className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-terracotta-500"
+                    className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-danger-500"
                   >
                     <Trash2 className="h-3.5 w-3.5" />
                   </button>

@@ -7,7 +7,7 @@ const ICONS = { success: CheckCircle2, error: XCircle, info: Info };
 const STYLES = {
   success: "border-sage-200 bg-sage-50 text-sage-700 dark:bg-sage-600/10 dark:border-sage-600/30 dark:text-sage-300",
   error:
-    "border-terracotta-200 bg-terracotta-50 text-terracotta-600 dark:bg-terracotta-600/10 dark:border-terracotta-600/30 dark:text-terracotta-300",
+    "border-danger-200 bg-danger-50 text-danger-600 dark:bg-danger-600/10 dark:border-danger-600/30 dark:text-danger-300",
   info: "border-slate-200 bg-white text-slate-700 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-200",
 };
 
