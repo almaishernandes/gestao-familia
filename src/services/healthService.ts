@@ -99,6 +99,7 @@ export interface PrescriptionItem {
   dosage: string;
   instructions: string;
   quantity: string;
+  prices?: Record<string, string>;
 }
 
 export interface Prescription {
@@ -111,6 +112,15 @@ export interface Prescription {
   validityDate: string | null;
   items: PrescriptionItem[];
   notes: string | null;
+  storagePath: string | null;
+}
+
+const MEDICAL_DOCS_BUCKET = "medical-documents";
+
+export async function getMedicalDocumentUrl(storagePath: string): Promise<string> {
+  const { data, error } = await supabase.storage.from(MEDICAL_DOCS_BUCKET).createSignedUrl(storagePath, 60 * 10);
+  if (error) throw error;
+  return data.signedUrl;
 }
 
 const PHARMACIES = [
@@ -120,6 +130,8 @@ const PHARMACIES = [
   { label: "Panvel", domain: "panvel.com" },
   { label: "Ultrafarma", domain: "ultrafarma.com.br" },
 ];
+
+export const PHARMACY_LABELS = PHARMACIES.map((p) => p.label);
 
 export function buildPriceSearchLinks(medicationName: string) {
   const term = encodeURIComponent(medicationName.trim());
@@ -135,7 +147,7 @@ export function buildPriceSearchLinks(medicationName: string) {
 export async function fetchPrescriptions(familyId: string): Promise<Prescription[]> {
   const { data, error } = await supabase
     .from("prescriptions")
-    .select("id, profile_id, doctor_name, doctor_crm, specialty, issued_date, validity_date, items, notes")
+    .select("id, profile_id, doctor_name, doctor_crm, specialty, issued_date, validity_date, items, notes, storage_path")
     .eq("family_id", familyId)
     .order("issued_date", { ascending: false });
   if (error) throw error;
@@ -149,6 +161,7 @@ export async function fetchPrescriptions(familyId: string): Promise<Prescription
     validityDate: r.validity_date,
     items: r.items ?? [],
     notes: r.notes,
+    storagePath: r.storage_path,
   }));
 }
 
@@ -162,8 +175,16 @@ export async function addPrescription(
   issuedDate: string,
   validityDate: string,
   items: PrescriptionItem[],
-  notes: string
+  notes: string,
+  photoFile?: File | null
 ) {
+  let storagePath: string | null = null;
+  if (photoFile) {
+    storagePath = `${familyId}/${Date.now()}-${photoFile.name}`;
+    const { error: uploadError } = await supabase.storage.from(MEDICAL_DOCS_BUCKET).upload(storagePath, photoFile);
+    if (uploadError) throw uploadError;
+  }
+
   const { error } = await supabase.from("prescriptions").insert({
     family_id: familyId,
     profile_id: profileId,
@@ -175,12 +196,18 @@ export async function addPrescription(
     items,
     notes: notes || null,
     created_by: userId,
+    storage_path: storagePath,
   });
   if (error) throw error;
 }
 
 export async function deletePrescription(id: string) {
   const { error } = await supabase.from("prescriptions").delete().eq("id", id);
+  if (error) throw error;
+}
+
+export async function updatePrescriptionItems(id: string, items: PrescriptionItem[]) {
+  const { error } = await supabase.from("prescriptions").update({ items }).eq("id", id);
   if (error) throw error;
 }
 

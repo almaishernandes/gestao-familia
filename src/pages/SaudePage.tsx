@@ -206,10 +206,19 @@ function ProntuarioTab({ onNavigateTab }: { onNavigateTab: (tab: Tab) => void })
       >
         {memberPrescriptions.map((p) => (
           <div key={p.id} className="text-sm text-slate-600 dark:text-slate-300">
-            <span className="font-medium text-slate-800 dark:text-slate-100">
-              {p.items.map((it) => it.name).join(", ") || "Receita"}
+            {p.items.length > 0 ? (
+              p.items.map((it, i) => (
+                <div key={i}>
+                  <span className="font-medium text-slate-800 dark:text-slate-100">{it.name}</span>
+                  {it.instructions && <span className="text-slate-400"> — {it.instructions}</span>}
+                </div>
+              ))
+            ) : (
+              <span className="font-medium text-slate-800 dark:text-slate-100">Receita</span>
+            )}
+            <span className="text-xs text-slate-400">
+              {format(new Date(p.issuedDate + "T00:00:00"), "d/M/yyyy")}
             </span>
-            <span className="text-slate-400"> · {format(new Date(p.issuedDate + "T00:00:00"), "d/M/yyyy")}</span>
           </div>
         ))}
       </RecordSection>
@@ -252,22 +261,43 @@ function ProntuarioTab({ onNavigateTab }: { onNavigateTab: (tab: Tab) => void })
 
 const EMPTY_ITEM: PrescriptionItem = { name: "", dosage: "", instructions: "", quantity: "" };
 
-function PriceSearchLinks({ medicationName }: { medicationName: string }) {
+function PriceSearchLinks({
+  medicationName,
+  prices,
+  onChangePrice,
+}: {
+  medicationName: string;
+  prices?: Record<string, string>;
+  onChangePrice?: (pharmacyLabel: string, value: string) => void;
+}) {
   if (!medicationName.trim()) return null;
   const links = healthService.buildPriceSearchLinks(medicationName);
   return (
-    <div className="flex flex-wrap gap-1.5 mt-1.5">
-      {links.map((l) => (
-        <a
-          key={l.label}
-          href={l.url}
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-[11px] font-medium text-sage-600 bg-sage-50 dark:bg-sage-600/20 rounded-full px-2 py-0.5 hover:bg-sage-100"
-        >
-          {l.label}
-        </a>
-      ))}
+    <div className="space-y-1 mt-1.5">
+      {links.map((l) => {
+        const isGeneral = l.label === "Comparar no Google";
+        return (
+          <div key={l.label} className="flex items-center gap-1.5">
+            <a
+              href={l.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-[11px] font-medium text-sage-600 bg-sage-50 dark:bg-sage-600/20 rounded-full px-2 py-0.5 hover:bg-sage-100 shrink-0"
+            >
+              {l.label}
+            </a>
+            {!isGeneral && (
+              <input
+                placeholder="R$"
+                value={prices?.[l.label] ?? ""}
+                readOnly={!onChangePrice}
+                onChange={(e) => onChangePrice?.(l.label, e.target.value)}
+                className="w-20 text-[11px] rounded-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-2 py-0.5 outline-none"
+              />
+            )}
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -283,10 +313,17 @@ function NewPrescriptionModal({ open, onClose, onCreated }: { open: boolean; onC
   const [validityDate, setValidityDate] = useState("");
   const [notes, setNotes] = useState("");
   const [items, setItems] = useState<PrescriptionItem[]>([{ ...EMPTY_ITEM }]);
+  const [photoFile, setPhotoFile] = useState<File | null>(null);
   const [loading, setLoading] = useState(false);
 
   function updateItem(index: number, field: keyof PrescriptionItem, value: string) {
     setItems((prev) => prev.map((it, i) => (i === index ? { ...it, [field]: value } : it)));
+  }
+
+  function updateItemPrice(index: number, pharmacyLabel: string, value: string) {
+    setItems((prev) =>
+      prev.map((it, i) => (i === index ? { ...it, prices: { ...it.prices, [pharmacyLabel]: value } } : it))
+    );
   }
 
   async function handleSubmit(e: React.FormEvent) {
@@ -305,7 +342,8 @@ function NewPrescriptionModal({ open, onClose, onCreated }: { open: boolean; onC
         issuedDate,
         validityDate,
         validItems,
-        notes
+        notes,
+        photoFile
       );
       toastSuccess("Receita registrada.");
       setDoctorName("");
@@ -313,6 +351,7 @@ function NewPrescriptionModal({ open, onClose, onCreated }: { open: boolean; onC
       setSpecialty("");
       setNotes("");
       setItems([{ ...EMPTY_ITEM }]);
+      setPhotoFile(null);
       onCreated();
       onClose();
     } catch {
@@ -350,7 +389,11 @@ function NewPrescriptionModal({ open, onClose, onCreated }: { open: boolean; onC
                   onChange={(e) => updateItem(i, "instructions", e.target.value)}
                   className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-2 py-1.5 text-sm outline-none"
                 />
-                <PriceSearchLinks medicationName={item.name} />
+                <PriceSearchLinks
+                  medicationName={item.name}
+                  prices={item.prices}
+                  onChangePrice={(label, value) => updateItemPrice(i, label, value)}
+                />
               </div>
             ))}
           </div>
@@ -364,6 +407,18 @@ function NewPrescriptionModal({ open, onClose, onCreated }: { open: boolean; onC
         </div>
 
         <TextField label="Observações" value={notes} onChange={(e) => setNotes(e.target.value)} />
+
+        <div>
+          <span className="text-sm font-medium text-slate-600 dark:text-slate-300 block mb-1">
+            Foto da receita (opcional)
+          </span>
+          <input
+            type="file"
+            accept="image/*,application/pdf"
+            onChange={(e) => setPhotoFile(e.target.files?.[0] ?? null)}
+            className="w-full text-sm text-slate-500 file:mr-3 file:rounded-lg file:border-0 file:bg-sage-50 file:text-sage-600 file:px-3 file:py-1.5 file:text-sm file:font-medium dark:file:bg-sage-600/20"
+          />
+        </div>
 
         <div>
           <button
@@ -419,6 +474,40 @@ function ReceituarioTab() {
     }
   }
 
+  async function handleViewDocument(storagePath: string) {
+    try {
+      const url = await healthService.getMedicalDocumentUrl(storagePath);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch {
+      toastError("Não foi possível abrir o documento.");
+    }
+  }
+
+  async function handlePriceChange(prescriptionId: string, itemIndex: number, pharmacyLabel: string, value: string) {
+    setPrescriptions((prev) =>
+      prev.map((p) =>
+        p.id !== prescriptionId
+          ? p
+          : {
+              ...p,
+              items: p.items.map((it, i) =>
+                i !== itemIndex ? it : { ...it, prices: { ...it.prices, [pharmacyLabel]: value } }
+              ),
+            }
+      )
+    );
+    const updated = prescriptions.find((p) => p.id === prescriptionId);
+    if (!updated) return;
+    const newItems = updated.items.map((it, i) =>
+      i !== itemIndex ? it : { ...it, prices: { ...it.prices, [pharmacyLabel]: value } }
+    );
+    try {
+      await healthService.updatePrescriptionItems(prescriptionId, newItems);
+    } catch {
+      toastError("Não foi possível salvar o preço.");
+    }
+  }
+
   function memberName(id: string) {
     return members.find((m) => m.id === id)?.fullName ?? "Membro";
   }
@@ -449,9 +538,19 @@ function ReceituarioTab() {
                   {p.validityDate && ` · Válida até ${format(new Date(p.validityDate + "T00:00:00"), "d/M/yyyy")}`}
                 </p>
               </div>
-              <button onClick={() => handleDelete(p.id)} className="text-slate-300 hover:text-danger-500">
-                <Trash2 className="h-4 w-4" />
-              </button>
+              <div className="flex items-center gap-3 shrink-0">
+                {p.storagePath && (
+                  <button
+                    onClick={() => handleViewDocument(p.storagePath!)}
+                    className="text-xs font-medium text-sage-600"
+                  >
+                    Ver receita
+                  </button>
+                )}
+                <button onClick={() => handleDelete(p.id)} className="text-slate-300 hover:text-danger-500">
+                  <Trash2 className="h-4 w-4" />
+                </button>
+              </div>
             </div>
             <div className="space-y-2 mt-2">
               {p.items.map((item, i) => (
@@ -462,7 +561,11 @@ function ReceituarioTab() {
                     {item.quantity && ` (${item.quantity})`}
                     {item.instructions && <span className="text-slate-400"> · {item.instructions}</span>}
                   </p>
-                  <PriceSearchLinks medicationName={item.name} />
+                  <PriceSearchLinks
+                    medicationName={item.name}
+                    prices={item.prices}
+                    onChangePrice={(label, value) => handlePriceChange(p.id, i, label, value)}
+                  />
                 </div>
               ))}
             </div>
