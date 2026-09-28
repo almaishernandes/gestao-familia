@@ -140,14 +140,13 @@ function EmergencyCard({ profileId, fullName }: { profileId: string; fullName: s
 }
 
 function ProntuarioTab() {
-  const members = useAppStore((s) => s.members);
-  return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-      {members.map((m) => (
-        <EmergencyCard key={m.id} profileId={m.id} fullName={m.fullName} />
-      ))}
-    </div>
-  );
+  const { members, currentUserId, selectedMemberId } = useAppStore();
+  const activeMemberId = selectedMemberId ?? currentUserId;
+  const activeMember = members.find((m) => m.id === activeMemberId) ?? members[0];
+
+  if (!activeMember) return null;
+
+  return <EmergencyCard key={activeMember.id} profileId={activeMember.id} fullName={activeMember.fullName} />;
 }
 
 // ---------------------------------------------------------------------------

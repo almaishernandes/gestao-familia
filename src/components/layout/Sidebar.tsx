@@ -7,7 +7,8 @@ import { Avatar } from "@/components/ui/Avatar";
 import { cn } from "@/lib/utils";
 
 export function Sidebar() {
-  const { activeModule, setActiveModule, theme, toggleTheme, members, currentUserId } = useAppStore();
+  const { activeModule, setActiveModule, theme, toggleTheme, members, currentUserId, setSelectedMemberId } =
+    useAppStore();
   const [expandedMemberId, setExpandedMemberId] = useState<string | null>(currentUserId);
 
   function toggleMember(id: string) {
@@ -48,7 +49,10 @@ export function Sidebar() {
                     return (
                       <button
                         key={item.key}
-                        onClick={() => setActiveModule(item.key)}
+                        onClick={() => {
+                          setSelectedMemberId(member.id);
+                          setActiveModule(item.key);
+                        }}
                         className={cn(
                           "w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm font-medium transition-colors",
                           active
