@@ -104,13 +104,32 @@ export interface PrescriptionItem {
 export interface Prescription {
   id: string;
   profileId: string;
-  doctorName: string;
+  doctorName: string | null;
   doctorCrm: string | null;
   specialty: string | null;
   issuedDate: string;
   validityDate: string | null;
   items: PrescriptionItem[];
   notes: string | null;
+}
+
+const PHARMACIES = [
+  { label: "Droga Raia", domain: "drogaraia.com.br" },
+  { label: "Drogasil", domain: "drogasil.com.br" },
+  { label: "Pague Menos", domain: "paguemenos.com.br" },
+  { label: "Panvel", domain: "panvel.com" },
+  { label: "Ultrafarma", domain: "ultrafarma.com.br" },
+];
+
+export function buildPriceSearchLinks(medicationName: string) {
+  const term = encodeURIComponent(medicationName.trim());
+  return [
+    { label: "Comparar no Google", url: `https://www.google.com/search?tbm=shop&q=${term}` },
+    ...PHARMACIES.map((p) => ({
+      label: p.label,
+      url: `https://www.google.com/search?q=${term}+site:${p.domain}`,
+    })),
+  ];
 }
 
 export async function fetchPrescriptions(familyId: string): Promise<Prescription[]> {

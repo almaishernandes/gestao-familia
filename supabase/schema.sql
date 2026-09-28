@@ -252,7 +252,7 @@ create table public.prescriptions (
   id uuid primary key default gen_random_uuid(),
   profile_id uuid not null references public.profiles(id) on delete cascade,
   family_id uuid not null references public.families(id) on delete cascade,
-  doctor_name text not null,
+  doctor_name text,
   doctor_crm text,
   specialty text,
   issued_date date not null default current_date,

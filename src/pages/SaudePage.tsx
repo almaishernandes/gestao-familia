@@ -139,14 +139,111 @@ function EmergencyCard({ profileId, fullName }: { profileId: string; fullName: s
   );
 }
 
-function ProntuarioTab() {
-  const { members, currentUserId, selectedMemberId } = useAppStore();
+function RecordSection({
+  title,
+  icon: Icon,
+  isEmpty,
+  onSeeAll,
+  children,
+}: {
+  title: string;
+  icon: typeof ClipboardList;
+  isEmpty: boolean;
+  onSeeAll: () => void;
+  children: React.ReactNode;
+}) {
+  return (
+    <Card className="p-5">
+      <div className="flex items-center justify-between mb-3">
+        <div className="flex items-center gap-2">
+          <Icon className="h-4 w-4 text-sage-500" />
+          <h3 className="text-sm font-semibold text-slate-900 dark:text-white">{title}</h3>
+        </div>
+        <button onClick={onSeeAll} className="text-xs font-medium text-sage-600">
+          Ver tudo
+        </button>
+      </div>
+      {isEmpty ? (
+        <p className="text-xs text-slate-400">Nenhum registro ainda.</p>
+      ) : (
+        <div className="space-y-2">{children}</div>
+      )}
+    </Card>
+  );
+}
+
+function ProntuarioTab({ onNavigateTab }: { onNavigateTab: (tab: Tab) => void }) {
+  const { familyId, members, currentUserId, selectedMemberId } = useAppStore();
   const activeMemberId = selectedMemberId ?? currentUserId;
   const activeMember = members.find((m) => m.id === activeMemberId) ?? members[0];
 
+  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
+  const [medications, setMedications] = useState<Medication[]>([]);
+  const [exams, setExams] = useState<MedicalExam[]>([]);
+
+  useEffect(() => {
+    if (!familyId) return;
+    healthService.fetchPrescriptions(familyId).then(setPrescriptions);
+    healthService.fetchMedications(familyId).then(setMedications);
+    healthService.fetchExams(familyId).then(setExams);
+  }, [familyId, activeMemberId]);
+
   if (!activeMember) return null;
 
-  return <EmergencyCard key={activeMember.id} profileId={activeMember.id} fullName={activeMember.fullName} />;
+  const memberPrescriptions = prescriptions.filter((p) => p.profileId === activeMember.id).slice(0, 3);
+  const memberMedications = medications.filter((m) => m.profileId === activeMember.id);
+  const memberExams = exams.filter((e) => e.profileId === activeMember.id).slice(0, 3);
+
+  return (
+    <div className="space-y-4">
+      <EmergencyCard key={activeMember.id} profileId={activeMember.id} fullName={activeMember.fullName} />
+
+      <RecordSection
+        title="Últimas receitas"
+        icon={FileText}
+        isEmpty={memberPrescriptions.length === 0}
+        onSeeAll={() => onNavigateTab("receituario")}
+      >
+        {memberPrescriptions.map((p) => (
+          <div key={p.id} className="text-sm text-slate-600 dark:text-slate-300">
+            <span className="font-medium text-slate-800 dark:text-slate-100">
+              {p.items.map((it) => it.name).join(", ") || "Receita"}
+            </span>
+            <span className="text-slate-400"> · {format(new Date(p.issuedDate + "T00:00:00"), "d/M/yyyy")}</span>
+          </div>
+        ))}
+      </RecordSection>
+
+      <RecordSection
+        title="Medicações contínuas"
+        icon={Pill}
+        isEmpty={memberMedications.length === 0}
+        onSeeAll={() => onNavigateTab("medicacao")}
+      >
+        {memberMedications.map((m) => (
+          <div key={m.id} className="text-sm text-slate-600 dark:text-slate-300">
+            <span className="font-medium text-slate-800 dark:text-slate-100">{m.name}</span>
+            {m.dosage && ` — ${m.dosage}`}
+            <span className="text-slate-400"> · {m.frequency}</span>
+          </div>
+        ))}
+      </RecordSection>
+
+      <RecordSection
+        title="Exames"
+        icon={FlaskConical}
+        isEmpty={memberExams.length === 0}
+        onSeeAll={() => onNavigateTab("exames")}
+      >
+        {memberExams.map((e) => (
+          <div key={e.id} className="text-sm text-slate-600 dark:text-slate-300">
+            <span className="font-medium text-slate-800 dark:text-slate-100">{e.examName}</span>
+            <span className="text-slate-400"> · {EXAM_STATUS_LABEL[e.status]}</span>
+          </div>
+        ))}
+      </RecordSection>
+    </div>
+  );
 }
 
 // ---------------------------------------------------------------------------
@@ -155,9 +252,30 @@ function ProntuarioTab() {
 
 const EMPTY_ITEM: PrescriptionItem = { name: "", dosage: "", instructions: "", quantity: "" };
 
+function PriceSearchLinks({ medicationName }: { medicationName: string }) {
+  if (!medicationName.trim()) return null;
+  const links = healthService.buildPriceSearchLinks(medicationName);
+  return (
+    <div className="flex flex-wrap gap-1.5 mt-1.5">
+      {links.map((l) => (
+        <a
+          key={l.label}
+          href={l.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-[11px] font-medium text-sage-600 bg-sage-50 dark:bg-sage-600/20 rounded-full px-2 py-0.5 hover:bg-sage-100"
+        >
+          {l.label}
+        </a>
+      ))}
+    </div>
+  );
+}
+
 function NewPrescriptionModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
-  const { familyId, currentUserId, members } = useAppStore();
-  const [profileId, setProfileId] = useState(members[0]?.id ?? "");
+  const { familyId, currentUserId, members, selectedMemberId } = useAppStore();
+  const [profileId, setProfileId] = useState(selectedMemberId ?? members[0]?.id ?? "");
+  const [showDoctorDetails, setShowDoctorDetails] = useState(false);
   const [doctorName, setDoctorName] = useState("");
   const [doctorCrm, setDoctorCrm] = useState("");
   const [specialty, setSpecialty] = useState("");
@@ -173,7 +291,8 @@ function NewPrescriptionModal({ open, onClose, onCreated }: { open: boolean; onC
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!familyId || !currentUserId || !profileId || !doctorName) return;
+    const validItems = items.filter((it) => it.name.trim());
+    if (!familyId || !currentUserId || !profileId || validItems.length === 0) return;
     setLoading(true);
     try {
       await healthService.addPrescription(
@@ -185,7 +304,7 @@ function NewPrescriptionModal({ open, onClose, onCreated }: { open: boolean; onC
         specialty,
         issuedDate,
         validityDate,
-        items.filter((it) => it.name.trim()),
+        validItems,
         notes
       );
       toastSuccess("Receita registrada.");
@@ -213,45 +332,25 @@ function NewPrescriptionModal({ open, onClose, onCreated }: { open: boolean; onC
             </option>
           ))}
         </SelectField>
-        <div className="grid grid-cols-2 gap-3">
-          <TextField label="Médico(a)" required value={doctorName} onChange={(e) => setDoctorName(e.target.value)} />
-          <TextField label="CRM" value={doctorCrm} onChange={(e) => setDoctorCrm(e.target.value)} />
-        </div>
-        <TextField label="Especialidade" value={specialty} onChange={(e) => setSpecialty(e.target.value)} />
-        <div className="grid grid-cols-2 gap-3">
-          <TextField label="Data de emissão" type="date" value={issuedDate} onChange={(e) => setIssuedDate(e.target.value)} />
-          <TextField label="Válida até" type="date" value={validityDate} onChange={(e) => setValidityDate(e.target.value)} />
-        </div>
 
         <div>
-          <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Itens prescritos</span>
+          <span className="text-sm font-medium text-slate-600 dark:text-slate-300">Medicamentos e posologia</span>
           <div className="space-y-2 mt-1">
             {items.map((item, i) => (
-              <div key={i} className="grid grid-cols-2 gap-2 p-2 rounded-lg bg-slate-50 dark:bg-slate-700/50">
+              <div key={i} className="p-2 rounded-lg bg-slate-50 dark:bg-slate-700/50 space-y-2">
                 <input
                   placeholder="Medicamento"
                   value={item.name}
                   onChange={(e) => updateItem(i, "name", e.target.value)}
-                  className="col-span-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-2 py-1.5 text-sm outline-none"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-2 py-1.5 text-sm outline-none"
                 />
                 <input
-                  placeholder="Dosagem"
-                  value={item.dosage}
-                  onChange={(e) => updateItem(i, "dosage", e.target.value)}
-                  className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-2 py-1.5 text-sm outline-none"
-                />
-                <input
-                  placeholder="Quantidade"
-                  value={item.quantity}
-                  onChange={(e) => updateItem(i, "quantity", e.target.value)}
-                  className="rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-2 py-1.5 text-sm outline-none"
-                />
-                <input
-                  placeholder="Posologia (ex: 1 comp. a cada 8h)"
+                  placeholder="Posologia (ex: 1 comprimido de 500mg a cada 8h, por 7 dias)"
                   value={item.instructions}
                   onChange={(e) => updateItem(i, "instructions", e.target.value)}
-                  className="col-span-2 rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-2 py-1.5 text-sm outline-none"
+                  className="w-full rounded-lg border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-700 px-2 py-1.5 text-sm outline-none"
                 />
+                <PriceSearchLinks medicationName={item.name} />
               </div>
             ))}
           </div>
@@ -260,11 +359,35 @@ function NewPrescriptionModal({ open, onClose, onCreated }: { open: boolean; onC
             onClick={() => setItems((prev) => [...prev, { ...EMPTY_ITEM }])}
             className="mt-2 text-xs font-medium text-sage-600"
           >
-            + Adicionar item
+            + Adicionar medicamento
           </button>
         </div>
 
         <TextField label="Observações" value={notes} onChange={(e) => setNotes(e.target.value)} />
+
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowDoctorDetails((v) => !v)}
+            className="text-xs font-medium text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
+          >
+            {showDoctorDetails ? "Ocultar" : "+ Adicionar"} dados do médico (opcional)
+          </button>
+          {showDoctorDetails && (
+            <div className="mt-2 space-y-3">
+              <div className="grid grid-cols-2 gap-3">
+                <TextField label="Médico(a)" value={doctorName} onChange={(e) => setDoctorName(e.target.value)} />
+                <TextField label="CRM" value={doctorCrm} onChange={(e) => setDoctorCrm(e.target.value)} />
+              </div>
+              <TextField label="Especialidade" value={specialty} onChange={(e) => setSpecialty(e.target.value)} />
+              <div className="grid grid-cols-2 gap-3">
+                <TextField label="Data de emissão" type="date" value={issuedDate} onChange={(e) => setIssuedDate(e.target.value)} />
+                <TextField label="Válida até" type="date" value={validityDate} onChange={(e) => setValidityDate(e.target.value)} />
+              </div>
+            </div>
+          )}
+        </div>
+
         <PrimaryButton type="submit" disabled={loading}>
           {loading ? "Salvando..." : "Salvar receita"}
         </PrimaryButton>
@@ -318,7 +441,8 @@ function ReceituarioTab() {
             <div className="flex items-start justify-between mb-2">
               <div>
                 <p className="text-sm font-medium text-slate-900 dark:text-white">
-                  {p.doctorName} {p.specialty && <span className="text-slate-400 font-normal">— {p.specialty}</span>}
+                  {p.doctorName || "Receita"}
+                  {p.specialty && <span className="text-slate-400 font-normal"> — {p.specialty}</span>}
                 </p>
                 <p className="text-xs text-slate-400">
                   {memberName(p.profileId)} · Emitida em {format(new Date(p.issuedDate + "T00:00:00"), "d/M/yyyy")}
@@ -329,14 +453,17 @@ function ReceituarioTab() {
                 <Trash2 className="h-4 w-4" />
               </button>
             </div>
-            <div className="space-y-1 mt-2">
+            <div className="space-y-2 mt-2">
               {p.items.map((item, i) => (
-                <p key={i} className="text-sm text-slate-600 dark:text-slate-300">
-                  <span className="font-medium">{item.name}</span>
-                  {item.dosage && ` — ${item.dosage}`}
-                  {item.quantity && ` (${item.quantity})`}
-                  {item.instructions && <span className="text-slate-400"> · {item.instructions}</span>}
-                </p>
+                <div key={i}>
+                  <p className="text-sm text-slate-600 dark:text-slate-300">
+                    <span className="font-medium">{item.name}</span>
+                    {item.dosage && ` — ${item.dosage}`}
+                    {item.quantity && ` (${item.quantity})`}
+                    {item.instructions && <span className="text-slate-400"> · {item.instructions}</span>}
+                  </p>
+                  <PriceSearchLinks medicationName={item.name} />
+                </div>
               ))}
             </div>
           </Card>
@@ -354,8 +481,8 @@ function ReceituarioTab() {
 // ---------------------------------------------------------------------------
 
 function NewMedicationModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
-  const { familyId, members } = useAppStore();
-  const [profileId, setProfileId] = useState(members[0]?.id ?? "");
+  const { familyId, members, selectedMemberId } = useAppStore();
+  const [profileId, setProfileId] = useState(selectedMemberId ?? members[0]?.id ?? "");
   const [name, setName] = useState("");
   const [dosage, setDosage] = useState("");
   const [frequency, setFrequency] = useState("");
@@ -483,8 +610,8 @@ function MedicacaoTab() {
 // ---------------------------------------------------------------------------
 
 function NewExamModal({ open, onClose, onCreated }: { open: boolean; onClose: () => void; onCreated: () => void }) {
-  const { familyId, currentUserId, members } = useAppStore();
-  const [profileId, setProfileId] = useState(members[0]?.id ?? "");
+  const { familyId, currentUserId, members, selectedMemberId } = useAppStore();
+  const [profileId, setProfileId] = useState(selectedMemberId ?? members[0]?.id ?? "");
   const [examName, setExamName] = useState("");
   const [examType, setExamType] = useState("");
   const [requestedBy, setRequestedBy] = useState("");
@@ -661,7 +788,7 @@ export function SaudePage() {
         })}
       </div>
 
-      {tab === "prontuario" && <ProntuarioTab />}
+      {tab === "prontuario" && <ProntuarioTab onNavigateTab={setTab} />}
       {tab === "receituario" && <ReceituarioTab />}
       {tab === "medicacao" && <MedicacaoTab />}
       {tab === "exames" && <ExamesTab />}
